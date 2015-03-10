@@ -17,6 +17,11 @@
 \maketitle
 
 \begin{abstract}
+  MIDI files, when paired with corresponding audio recordings, can be used as ground truth for many music information retrieval tasks.
+  We present a system which can efficiently match and align MIDI files to entries in a large corpus of audio content without using any metadata.
+  The core of our approach is a neural network-based cross-modality hashing scheme which transforms acoustic feature matrices and MIDI piano rolls into sequences of vectors in a common Hamming space.
+  Once represented in this way, we can efficiently perform large-scale dynamic time warping searches to match MIDI data to audio recordings.
+  We evaluate our approach on the task of matching a huge corpus of MIDI files to the Million Song Dataset.
 \end{abstract}
 
 \bibliography{refs}

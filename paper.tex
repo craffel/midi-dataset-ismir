@@ -14,6 +14,8 @@
   {Second author} {\bf Retain these fake authors in\\\bf submission to preserve the formatting}
   {Third author} {Affiliation3 \\ {\tt author3@ismir.edu}}
 
+\begin{document}
+
 \maketitle
 
 \begin{abstract}
@@ -23,6 +25,22 @@
   Once represented in this way, we can efficiently perform large-scale dynamic time warping searches to match MIDI data to audio recordings.
   We evaluate our approach on the task of matching a huge corpus of MIDI files to the Million Song Dataset.
 \end{abstract}
+
+\section{Training Data for MIR}\label{sec:introduction}
+
+Central to the task of content-based Music Information Retrieval is the curation of ground-truth data for tasks of interest (e.g. timestamped chord labels for automatic chord estimation, beat positions for beat tracking, prominent melody time series for melody extraction, etc.).
+The quantity and quality of this ground-truth is often instrumental in the success of MIR systems which utilize it as training data.
+Unfortunately, creating appropriate labels for a recording of a given song by hand often requires person-hours on the order of the length of the song.
+This often arguably makes the available training data a bottleneck to success for a given content-based MIR task.
+
+It has previously been observed that MIDI files, when time-aligned to corresponding audio recordings, can be used to infer ground-truth information about a given song \cite{ewert2012towards, turetsky2003ground}.
+This is due to the fact that a MIDI files can be viewed simplistically as a timed sequence of note annotations or a piano roll.
+It is much more straightforward to estimate, e.g., beat locations, chord labels, and the predominant melody from these representations than one which was derived from an audio signal.
+Unsurprisingly, a handful of tools have been developed for inferring this information from MIDI files \cite{eerola2004mir,mckay2006jsymbolic,cuthbert2010music21,raffel2014pretty_midi}.
+
+In \cite{halevy2009unreasonable}, it is argued that some of the biggest successes in machine learning are thanks to the fact that ``...a large training set of the input-output behavior that we seek to automate is available to us in the wild.''
+The main motivation behind this project is that this crucial availability of data holds true for MIDI files - through a large-scale web scrape, we obtained 250,000 unique MIDI files, which is orders of magnitude larger than the datasets typically used for MIR research.
+We believe this proliferation of data is largely caused to two factors: First, that karaoke files are typically distributed as MIDI data and that karaoke is wildly popular, and second, that transcribing popular music as MIDI files was a common pastime for hobbyist musicians in the nineties.
 
 \bibliography{refs}
 

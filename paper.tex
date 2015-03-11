@@ -2,6 +2,7 @@
 \usepackage{ismir,amsmath,cite}
 \usepackage{graphicx}
 \usepackage{color}
+\usepackage{framed}
 
 \title{Large-Scale Content-Based Matching of MIDI and Audio Files}
 
@@ -41,6 +42,50 @@ Unsurprisingly, a handful of tools have been developed for inferring this inform
 In \cite{halevy2009unreasonable}, it is argued that some of the biggest successes in machine learning are thanks to the fact that ``...a large training set of the input-output behavior that we seek to automate is available to us in the wild.''
 The main motivation behind this project is that this crucial availability of data holds true for MIDI files - through a large-scale web scrape, we obtained 250,000 unique MIDI files, which is orders of magnitude larger than the datasets typically used for MIR research.
 We believe this proliferation of data is largely caused to two factors: First, that karaoke files are typically distributed as MIDI data and that karaoke is wildly popular, and second, that transcribing popular music as MIDI files was a common pastime for hobbyist musicians in the nineties.
+
+\subsection{Wrangling MIDI Files}
+
+The mere existence of a large collection of MIDI data is not enough, however.
+As noted above, in order to use MIDI files as ground truth, they need to be both matched (paired with a corresponding audio recording of the same song) and aligned (adjusted so that the timing of the events transcribed in the file match the audio recording).
+The latter problem has seen a great deal of research effort \cite{ewert2012towards, turetsky2003ground}, and will not be a main focus of this work.
+
+Given a large corpora of audio and MIDI files, the task of matching entries from each may seem to be a trivial problem involving fuzzy text matching of the files' metadata.
+However, MIDI files have no formal mechanism for storing metadata (apart from text meta events, which are rarely used), and as a result the best-case scenario is that the artist and song title are included in the filename or subdirectory.
+While we found some examples of this in our collection of scraped MIDI files, the vast majority of the files had effectively no metadata information.
+Figure \ref{fig:midi-names} shows a random sampling of subdirectory and filenames from our collection.
+
+\begin{figure}
+  \begin{framed}
+    \scriptsize
+    \tt
+    J/Jerseygi.mid
+
+    V/VARIA18O.MID
+
+    Carpenters/WeveOnly.mid
+
+    2009 MIDI/handy\char`_man1-D105.mid
+
+    G/Garotos Modernos - Bailanta De Fronteira.mid
+
+    Various Artists/REWINDNAS.MID
+
+    GoldenEarring/Twilight\char`_Zone.mid
+
+    Sure.Polyphone.Midi/Poly 2268.mid
+
+    d/danza3.mid
+
+    100\%sure.polyphone.midi/Fresh.mid
+
+    rogers\char`_kenny/medley.mid
+
+    2009 MIDI/looking\char`_out\char`_my\char`_backdoor3-Bb192.mid
+  \end{framed}
+
+  \caption{Random sampling of 12 MIDI filenames and their parent directories from our corpus of 250,000 MIDI files scraped from the Internet.}
+  \label{fig:midi-names}
+\end{figure}
 
 \bibliography{refs}
 

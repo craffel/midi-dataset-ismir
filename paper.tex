@@ -87,6 +87,28 @@ Figure \ref{fig:midi-names} shows a random sampling of subdirectory and filename
   \label{fig:midi-names}
 \end{figure}
 
+Fortunately, the goal of matching MIDI and audio files is to find pairs which have \textit{content} in common (i.e., the MIDI file is a transcription of the audio file), an information source which is available regardless of metadata quality.
+However, comparing content has the potential to require much more computation than a fuzzy text comparison, and $NM$ comparisons must be made to match a MIDI dataset of size $N$ to an audio file dataset of size $M$.
+Motivated by this, we propose a system which can \textit{efficiently} match MIDI files to audio based solely on their content.
+Our system learns to hash MIDI and audio content to a common hamming space where sequences of vectors can be compared efficiently using dynamic time warping (DTW).
+
+In the following section, we detail the dataset of MIDI files we scraped from the Internet and describe how we prepared a subset for training our hasher.
+Our cross-modality hashing model is then described in Section \ref{sec:hashing}.
+In Section \ref{sec:dtw}, we cover our fast hash sequence DTW method and its accompanying pruning techniques.
+Finally, we evaluate our system's performance on the task of matching files from our MIDI dataset to entries in the Million Song Dataset \cite{bertin2011million}.
+
+\section{The MIDI Dataset}
+\label{sec:dataset}
+
+\section{Cross-Modality Hashing of MIDI and Audio Data}
+\label{sec:hashing}
+
+\section{Fast DTW Matching of Hash Sequences}
+\label{sec:dtw}
+
+\section{Matching MIDI Files to the MSD}
+\label{sec:msd}
+
 \bibliography{refs}
 
 \end{document}

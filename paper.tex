@@ -49,7 +49,7 @@ The mere existence of a large collection of MIDI data is not enough, however.
 As noted above, in order to use MIDI files as ground truth, they need to be both matched (paired with a corresponding audio recording of the same song) and aligned (adjusted so that the timing of the events transcribed in the file match the audio recording).
 The latter problem has seen a great deal of research effort \cite{ewert2012towards, turetsky2003ground}, and will not be a main focus of this work.
 
-Given a large corpora of audio and MIDI files, the task of matching entries from each may seem to be a trivial problem involving fuzzy text matching of the files' metadata.
+Given large corpora of audio and MIDI files, the task of matching entries from each may seem to be a trivial problem involving fuzzy text matching of the files' metadata.
 However, MIDI files have no formal mechanism for storing metadata (apart from text meta events, which are rarely used), and as a result the best-case scenario is that the artist and song title are included in the filename or subdirectory.
 While we found some examples of this in our collection of scraped MIDI files, the vast majority of the files had effectively no metadata information.
 Figure \ref{fig:midi-names} shows a random sampling of subdirectory and filenames from our collection.
@@ -90,7 +90,7 @@ Figure \ref{fig:midi-names} shows a random sampling of subdirectory and filename
 Fortunately, the goal of matching MIDI and audio files is to find pairs which have \textit{content} in common (i.e., the MIDI file is a transcription of the audio file), an information source which is available regardless of metadata quality.
 However, comparing content has the potential to require much more computation than a fuzzy text comparison, and $NM$ comparisons must be made to match a MIDI dataset of size $N$ to an audio file dataset of size $M$.
 Motivated by this, we propose a system which can \textit{efficiently} match MIDI files to audio based solely on their content.
-Our system learns to hash MIDI and audio content to a common hamming space where sequences of vectors can be compared efficiently using dynamic time warping (DTW).
+Our system learns to hash MIDI and audio content to a common Hamming space where sequences of vectors can be compared efficiently using dynamic time warping (DTW).
 
 In the following section, we detail the dataset of MIDI files we scraped from the Internet and describe how we prepared a subset for training our hasher.
 Our cross-modality hashing model is then described in Section \ref{sec:hashing}.

@@ -95,7 +95,7 @@ Our system learns to hash MIDI and audio content to a common Hamming space where
 The idea of using DTW distance to match MIDI files to audio recordings is not new.
 For example, in \cite{hu2003polyphonic}, MIDI-audio matching is done by finding the minimal DTW distance between all pairs of chromagrams of (synthesized) MIDI and audio files.
 Our approach differs in a few key ways: First, instead of using chromagrams (a hand-designed representation), we optimize a common representation for MIDI and audio data.
-This makes our system flexible with respect to the underlying feature representation used for each modality.
+This makes our system flexible with respect to the underlying feature representation used for each feature modality.
 Second, our datasets are many orders of magnitude larger (hundreds of thousands vs.\ hundreds of files), which necessitates a much more efficient approach.
 Specifically, by mapping to a Hamming space we greatly speed up distance matrix calculation and our proposed pruning techniques avoid a full DTW distance computation for the majority of file pairs.
 
@@ -106,6 +106,30 @@ Finally, we evaluate our system's performance on the task of matching files from
 
 \section{The MIDI Dataset}
 \label{sec:dataset}
+
+Our project began with a large-scale scrape of MIDI files from the Internet.
+We obtained 500,000 files, of which 250,000 were found to have unique MD5 checksums.
+Most of these files were transcriptions of pieces of music of varying duration and quality.
+As mentioned previously, the majority of these files had very little useful metadata information.
+However, we identified a subset of files where the subdirectory of the file indicated the artist and the filename indicated the song title.
+In order to normalize this metadata, we applied some manual text processing and resolved the artists and song titles against the Freebase \cite{bollacker2008freebase} and Echo Nest\footnote{\texttt{http://developer.echonest.com/docs/v4}} databases.
+This resulted in 17,000 MIDI files for about 9,000 unique songs.
+We will refer to this collection of files as the "clean MIDI subset".
+
+The model we will use to hash MIDI and audio features to a common Hamming space (described in Section \ref{sec:hashing}) requires a training set of feature vectors in each modality which should be mapped to similar hashes.
+In our application, we will be matching sequences of hashes, so we need to obtain pairs of sequences of feature vectors where the $n$th vector in one sequence should be mapped to the $n$th vector in the other.
+This necessitates a collection of MIDI files and audio recordings which we are confident are well-aligned in time.
+From this collection, we can extract features for each modality and be sure that there is a direct correspondence between the resulting hash sequences and the original feature vector sequences.
+
+To obtain this training data, we combined three benchmark audio collections: CAL500 \cite{turnbull2007towards}, CAL10k \cite{tingle2010exploring}, and uspop2002 \cite{berenzweig2004large}.
+Each consists of a collection of music recordings, their metadata, and precomputed Echo Nest feature vectors (as used in the Million Song Dataset).
+To match these datasets to the clean MIDI subset, we performed a fuzzy matching of their metadata.
+We used Whoosh, a Python search engine package, to perform the fuzzy string search.
+
+In order to obtain feature vectors from each modality which should have the same hash representation, we first need to align matched MIDI and audio files.
+We used the technique described in \cite{anonymous}, which performs MIDI-audio alignment using DTW and reports a confidence score based on the normalized DTW distance.
+By listening to a random subset of 100 MIDI-audio alignments, we determined a confidence score threshold below which we could be reasonably certain that an alignment was successful.
+This resulted in about 5,000 correctly aligned MIDI/audio pairs, of which 2,000 corresponded to unique songs.
 
 \section{Cross-Modality Hashing of MIDI and Audio Data}
 \label{sec:hashing}

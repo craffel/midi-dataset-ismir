@@ -40,7 +40,7 @@ It is much more straightforward to estimate, e.g., beat locations, chord labels,
 Unsurprisingly, a handful of tools have been developed for inferring this information from MIDI files \cite{eerola2004mir,mckay2006jsymbolic,cuthbert2010music21,raffel2014pretty_midi}.
 
 In \cite{halevy2009unreasonable}, it is argued that some of the biggest successes in machine learning are thanks to the fact that ``...a large training set of the input-output behavior that we seek to automate is available to us in the wild.''
-The main motivation behind this project is that this crucial availability of data holds true for MIDI files - through a large-scale web scrape, we obtained 250,000 unique MIDI files, which is orders of magnitude larger than the datasets typically used for MIR research.
+The main motivation behind this project is that this crucial availability of data holds true for MIDI files - through a large-scale web scrape, we obtained 140,910 unique MIDI files, which is orders of magnitude larger than the datasets typically used for MIR research.
 We believe this proliferation of data is largely caused to two factors: First, that karaoke files are typically distributed as MIDI data and that karaoke is wildly popular, and second, that transcribing popular music as MIDI files was a common pastime for hobbyist musicians in the nineties.
 
 \subsection{Wrangling MIDI Files}
@@ -83,7 +83,7 @@ Figure \ref{fig:midi-names} shows a random sampling of subdirectory and filename
     2009 MIDI/looking\char`_out\char`_my\char`_backdoor3-Bb192.mid
   \end{framed}
 
-  \caption{Random sampling of 12 MIDI filenames and their parent directories from our corpus of 250,000 MIDI files scraped from the Internet.}
+  \caption{Random sampling of 12 MIDI filenames and their parent directories from our corpus of 455,333 MIDI files scraped from the Internet.}
   \label{fig:midi-names}
 \end{figure}
 
@@ -108,12 +108,12 @@ Finally, we evaluate our system's performance on the task of matching files from
 \label{sec:dataset}
 
 Our project began with a large-scale scrape of MIDI files from the Internet.
-We obtained 500,000 files, of which 250,000 were found to have unique MD5 checksums.
+We obtained 455,333 files, of which 140,910 were found to have unique MD5 checksums.
 Most of these files were transcriptions of pieces of music of varying duration and quality.
 As mentioned previously, the majority of these files had very little useful metadata information.
 However, we identified a subset of files where the subdirectory of the file indicated the artist and the filename indicated the song title.
 In order to normalize this metadata, we applied some manual text processing and resolved the artists and song titles against the Freebase \cite{bollacker2008freebase} and Echo Nest\footnote{\texttt{http://developer.echonest.com/docs/v4}} databases.
-This resulted in 17,000 MIDI files for about 9,000 unique songs.
+This resulted in 17,243 MIDI files for 10,060 unique songs.
 We will refer to this collection of files as the "clean MIDI subset".
 
 The model we will use to hash MIDI and audio features to a common Hamming space (described in Section \ref{sec:hashing}) requires a training set of feature vectors in each modality which should be mapped to similar hashes.
@@ -125,11 +125,12 @@ To obtain this training data, we combined three benchmark audio collections: CAL
 Each consists of a collection of music recordings, their metadata, and precomputed Echo Nest feature vectors (as used in the Million Song Dataset).
 To match these datasets to the clean MIDI subset, we performed a fuzzy matching of their metadata.
 We used Whoosh, a Python search engine package, to perform the fuzzy string search.
+This resulted in 4,914 matches of a file from the clean MIDI subset to an audio file in one of the benchmark collections listed above.
 
 In order to obtain feature vectors from each modality which should have the same hash representation, we first need to align matched MIDI and audio files.
 We used the technique described in \cite{anonymous}, which performs MIDI-audio alignment using DTW and reports a confidence score based on the normalized DTW distance.
 By listening to a random subset of 100 MIDI-audio alignments, we determined a confidence score threshold below which we could be reasonably certain that an alignment was successful.
-This resulted in about 5,000 correctly aligned MIDI/audio pairs, of which 2,000 corresponded to unique songs.
+This resulted in 3,004 correctly aligned MIDI/audio pairs, of which 978 corresponded to unique songs.
 
 \section{Cross-Modality Hashing of MIDI and Audio Data}
 \label{sec:hashing}

@@ -1,10 +1,9 @@
 SRC = paper
 
 all: $(SRC).tex
-	pdflatex $<
-	bibtex $(SRC)
-	pdflatex $<
-	pdflatex $<
+	rubber -f --pdf -s $<
+	rubber-info $<
+	open $(SRC).pdf
 
 check: $(SRC).tex
 	chktex $<

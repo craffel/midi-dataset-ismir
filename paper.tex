@@ -31,7 +31,7 @@
 
 Central to the task of content-based Music Information Retrieval is the curation of ground-truth data for tasks of interest (e.g. timestamped chord labels for automatic chord estimation, beat positions for beat tracking, prominent melody time series for melody extraction, etc.).
 The quantity and quality of this ground-truth is often instrumental in the success of MIR systems which utilize it as training data.
-Unfortunately, creating appropriate labels for a recording of a given song by hand often requires person-hours on the order of the length of the song.
+Unfortunately, creating appropriate labels for a recording of a given song by hand typically requires person-hours on the order of the length of the song.
 This often arguably makes the available training data a bottleneck to success for a given content-based MIR task.
 
 It has previously been observed that MIDI files, when time-aligned to corresponding audio recordings, can be used to infer ground-truth information about a given song \cite{ewert2012towards, turetsky2003ground}.
@@ -41,9 +41,9 @@ Unsurprisingly, a handful of tools have been developed for inferring this inform
 
 In \cite{halevy2009unreasonable}, it is argued that some of the biggest successes in machine learning are thanks to the fact that ``...a large training set of the input-output behavior that we seek to automate is available to us in the wild.''
 The main motivation behind this project is that this crucial availability of data holds true for MIDI files - through a large-scale web scrape, we obtained 140,910 unique MIDI files, which is orders of magnitude larger than the datasets typically used for MIR research.
-We believe this proliferation of data is largely caused to two factors: First, that karaoke files are typically distributed as MIDI data and that karaoke is wildly popular, and second, that transcribing popular music as MIDI files was a common pastime for hobbyist musicians in the nineties.
+We believe this proliferation of data is largely caused to two factors: First, that karaoke files are typically distributed as MIDI data and that karaoke is wildly popular, and second, that transcribing popular music as MIDI files is a common pastime for hobbyist musicians.
 
-\subsection{Wrangling MIDI Files}
+\subsection{Wrangling MIDI files}
 
 The mere existence of a large collection of MIDI data is not enough, however.
 As noted above, in order to use MIDI files as ground truth, they need to be both matched (paired with a corresponding audio recording of the same song) and aligned (adjusted so that the timing of the events transcribed in the file match the audio recording).
@@ -94,43 +94,51 @@ Our system learns to hash MIDI and audio content to a common Hamming space where
 
 The idea of using DTW distance to match MIDI files to audio recordings is not new.
 For example, in \cite{hu2003polyphonic}, MIDI-audio matching is done by finding the minimal DTW distance between all pairs of chromagrams of (synthesized) MIDI and audio files.
-Our approach differs in a few key ways: First, instead of using chromagrams (a hand-designed representation), we optimize a common representation for MIDI and audio data.
-This makes our system flexible with respect to the underlying feature representation used for each feature modality.
+Our approach differs in a few key ways: First, instead of using chromagrams (a hand-designed representation), we learn a common representation for MIDI and audio data.
 Second, our datasets are many orders of magnitude larger (hundreds of thousands vs.\ hundreds of files), which necessitates a much more efficient approach.
-Specifically, by mapping to a Hamming space we greatly speed up distance matrix calculation and our proposed pruning techniques avoid a full DTW distance computation for the majority of file pairs.
+Specifically, by mapping to a Hamming space we greatly speed up distance matrix calculation and we receive quadratic speed gains by implicitly downsampling the audio and MIDI feature sequences as part of our learned feature mapping.
 
 In the following section, we detail the dataset of MIDI files we scraped from the Internet and describe how we prepared a subset for training our hasher.
 Our cross-modality hashing model is then described in Section \ref{sec:hashing}.
 In Section \ref{sec:dtw}, we cover our fast hash sequence DTW method and its accompanying pruning techniques.
 Finally, we evaluate our system's performance on the task of matching files from our MIDI dataset to entries in the Million Song Dataset \cite{bertin2011million}.
 
-\section{The MIDI Dataset}
+\section{Preparing Data}
 \label{sec:dataset}
 
 Our project began with a large-scale scrape of MIDI files from the Internet.
 We obtained 455,333 files, of which 140,910 were found to have unique MD5 checksums.
 Most of these files were transcriptions of pieces of music of varying duration and quality.
 As mentioned previously, the majority of these files had very little useful metadata information.
-However, we identified a subset of files where the subdirectory of the file indicated the artist and the filename indicated the song title.
-In order to normalize this metadata, we applied some manual text processing and resolved the artists and song titles against the Freebase \cite{bollacker2008freebase} and Echo Nest\footnote{\texttt{http://developer.echonest.com/docs/v4}} databases.
-This resulted in 17,243 MIDI files for 10,060 unique songs.
-We will refer to this collection of files as the "clean MIDI subset".
+The goal of the present work is to develop an efficient way to match this corpus against the Million Song Dataset (MSD), or more specifically, to the short preview audio recordings provided by 7digital \cite{schindler2012facilitating}.
 
-The model we will use to hash MIDI and audio features to a common Hamming space (described in Section \ref{sec:hashing}) requires a training set of feature vectors in each modality which should be mapped to similar hashes.
-In our application, we will be matching sequences of hashes, so we need to obtain pairs of sequences of feature vectors where the $n$th vector in one sequence should be mapped to the $n$th vector in the other.
+In order to evaluate our system, we need a collection of MIDI-audio pairs which we know are correctly matched.
+The accuracy of our approach can then be judged based on how accurately it is able to recover these pairings using the content of the audio and MIDI files alone.
+Fortunately, we identified a subset of files where the subdirectory of the file indicated the artist and the filename indicated the song title.
+By cleaning up this subset and using the resuling metadata to match its entries against the Million Song Dataset, we can obtain the requisite ground-truth set of MIDI-audio pairings.
+We will refer to this collection of files as the ``clean MIDI subset''.
+
+A further data requirement for our system is a collection of feature vectors derived from audio and MIDI data which should be mapped to similar hashes.
+This dataset will be used to train our model for hashing MIDI and audio features to a common Hamming space (described in Section \ref{sec:hashing}).
+In our application, we will be matching sequences of hashes using dynamic time warping, so we need to obtain pairs of sequences of feature vectors where the $n$th vector in one sequence should be mapped to the $n$th vector in the other.
 This necessitates a collection of MIDI files and audio recordings which we are confident are well-aligned in time.
 From this collection, we can extract features for each modality and be sure that there is a direct correspondence between the resulting hash sequences and the original feature vector sequences.
 
-To obtain this training data, we combined three benchmark audio collections: CAL500 \cite{turnbull2007towards}, CAL10k \cite{tingle2010exploring}, and uspop2002 \cite{berenzweig2004large}.
-Each consists of a collection of music recordings, their metadata, and precomputed Echo Nest feature vectors (as used in the Million Song Dataset).
-To match these datasets to the clean MIDI subset, we performed a fuzzy matching of their metadata.
-We used Whoosh, a Python search engine package, to perform the fuzzy string search.
-This resulted in 4,914 matches of a file from the clean MIDI subset to an audio file in one of the benchmark collections listed above.
+\subsection{Metadata matching}
 
-In order to obtain feature vectors from each modality which should have the same hash representation, we first need to align matched MIDI and audio files.
-We used the technique described in \cite{anonymous}, which performs MIDI-audio alignment using DTW and reports a confidence score based on the normalized DTW distance.
-By listening to a random subset of 100 MIDI-audio alignments, we determined a confidence score threshold below which we could be reasonably certain that an alignment was successful.
-This resulted in 3,004 correctly aligned MIDI/audio pairs, of which 978 corresponded to unique songs.
+We first extracted the song title and artist from each entry in the clean MIDI subset based on each MIDI file's filename and subdirectory.
+The resulting metadata was still somewhat messy; for example, ``The Beatles'' appeared as an artist along with ``Beatles, The'', ``Beatles'', and ``The Beatles John Paul Ringo George''.
+To normalize these issues, we applied some manual text processing and resolved the artists and song titles against the Freebase \cite{bollacker2008freebase} and Echo Nest\footnote{\texttt{http://developer.echonest.com/docs/v4}} databases.
+This resulted in 17,243 MIDI files for 10,060 unique songs.
+
+As noted above, we will leverage the clean MIDI subset in two ways: First, to obtain ground-truth pairings of MSD/MIDI matches, and second, to create training data for our hashing scheme.
+Note that for the latter purpose, we do not need to restrict ourselves to audio data from the MSD, and we can reasonably expect that by using more training data we may be able to learn a better representation.
+As a result, we combined the MSD with three benchmark audio collections: CAL500 \cite{turnbull2007towards}, CAL10k \cite{tingle2010exploring}, and uspop2002 \cite{berenzweig2004large}.
+To match these datasets to the clean MIDI subset, we used the Python search engine library Whoosh to perform a fuzzy matching of their metadata.
+This resulted in 26,311 audio/MIDI file pairs corresponding to 5,243 unique songs.
+
+\subsection{Audio-to-audio alignment}
+
 
 \section{Cross-Modality Hashing of MIDI and Audio Data}
 \label{sec:hashing}

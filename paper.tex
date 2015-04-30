@@ -164,7 +164,34 @@ We therefore modify this constraint so that either $gN \le p[L] \le N$ or $gM \l
 We also include the typical modification of applying an additive penalty for ``non-diagonal moves'', i.e. path entries where either $p[i] = p[i + 1]$ or $q[i] = q[i + 1]$.
 For synthesized MIDI-to-audio alignment, we used $g = .95$ and set the non-diagonal additive penalty to the 90th percentile of $S$.
 
-(Listening to alignments to find a threshold)
+\subsection{DTW cost as confidence score}
+
+The ``cost'' of a DTW path $p, q$ through $S$ is calculated by the sum of the distances between the aligned entries of each sequence, or
+$$
+\sum_{i = 1}^L S[p[i], q[i]]
+$$
+As-is, the DTW cost is not an appropriate confidence score for alignment/match quality in our application primarily for two reasons.
+First of all, the path length can vary greatly across MIDI/audio file pairs depending on $N$ and $M$.
+We therefore compute the \textit{mean} distance between aligned constant-Q spectra across the path instead of the sum of distances:
+$$
+\frac{1}{L}\sum_{i = 1}^L S[p[i], q[i]]
+$$
+Secondly, the scale of $S$ (and therefore the DTW cost) depends on how similar the synthesized audio is to the ``real'' audio recording, which is not an important factor in the alignment quality.
+This can be mitigated by normalizing the DTW cost by the mean value of the submatrix of $S$ through which the DTW past travels:
+$$
+\mathcal{N} = \sum_{i = \min(p)}^{\max(p)} \sum_{j = \min(q)}^{\max(q)} S[i, j] 
+$$
+These normalizations were also discussed in \cite{hu2003polyphonic}.
+Combining the above, we get our modified DTW cost $c$:
+$$
+c = \frac{1}{L \mathcal{N}} \sum_{i = 1}^L S[p[i], q[i]]
+$$
+In practice, we found these two normalization steps to be of critical importance for obtaining a reliable confidence score.
+
+In order to use our normalized DTW cost to determine when a match and alignment was successful, we need a threshold above which the DTW cost indicates a failure.
+To estimate this threshold, we manually auditioned 125 alignments and noted whether each was successful, where ``success'' requires that the audio and MIDI were well-synchronized for their entire duration.
+From this, we obtained an AUC-ROC score of $0.986$, indicating a highly reliable confidence metric.
+As a threshold, we chose $0.78$, above which no alignments where labeled as successful.
 
 \subsection{Splitting the subset}
 

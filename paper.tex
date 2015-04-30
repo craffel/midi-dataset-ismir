@@ -157,16 +157,16 @@ We then compute log-amplitude beat-synchronous constant-Q transforms (CQTs) of a
 The resulting feature matrices are then of dimensionality $N \times D$ and $M \times D$ where $N$ and $M$ are the resulting number of beats in the MIDI and audio recordings respectively and $D$ is $48$ (the number of semitones between C3 and C7).
 
 We then use dynamic time warping to find the lowest-cost path through a full pairwise cosine similarity matrix $S \in \mathbb{R}^{N \times M}$ of the MIDI and audio CQTs.
-This path can be represented as a sequence $P \in \mathbb{R}^L$ of tuples of indices from each sequence such that $P[n] = (p, q)$ implies that the $p$th MIDI beat should be aligned to the $q$th audio beat.
-Traditional DTW requires that this path includes the start and end of each sequence, or equivalently that $P[1] = (1, 1)$ and $P[L] = (N, M)$.
-This approach is not valid when one sequence may be a subsequence of the other, which is often true in our problem setting due to the fact that the MSD 7digital audio recordings are cropped preview clips of the entire recordings.
-We therefore modify this constraint so that if $P[L] = (p, q)$ then either $gN \le p \le N$ or $gM \le q \le M$ where $g \approx 1$ is a parameter which provides a small amount of additional tolerance.
-We also include the typical modification of applying an additive penalty for ``non-diagonal moves'', i.e. path entries where if $P[n] = (p, q)$ then $P[n + 1] = (p, r)$ or $P[n] = (r, q)$.
+This path can be represented as two sequences $p, q \in \mathbb{R}^L$ of indices from each sequence such that $p[i] = n, q[i] = m$ implies that the $n$th MIDI beat should be aligned to the $m$th audio beat.
+Traditional DTW requires that this path includes the start and end of each sequence, or equivalently that $p[1] = q[1] = 1; p[L] = N; p[L] = M$.
+This approach is not valid when one sequence may be a subsequence of the other, which is often true in our problem setting due to the fact that, for example, the MSD 7digital audio recordings are cropped preview song clips.
+We therefore modify this constraint so that either $gN \le p[L] \le N$ or $gM \le q[L] \le M$ where $g \approx 1$ is a parameter which provides a small amount of additional tolerance.
+We also include the typical modification of applying an additive penalty for ``non-diagonal moves'', i.e. path entries where either $p[i] = p[i + 1]$ or $q[i] = q[i + 1]$.
 For synthesized MIDI-to-audio alignment, we used $g = .95$ and set the non-diagonal additive penality to the 90th percentile of $S$.
 
 (Listening to alignments to find a threshold)
 
-\subsection{Splitting the subset}`
+\subsection{Splitting the subset}
 
 \section{Cross-Modality Hashing of MIDI and Audio Data}
 \label{sec:hashing}

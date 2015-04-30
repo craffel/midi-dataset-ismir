@@ -1,5 +1,6 @@
 \documentclass{article}
 \usepackage{ismir,amsmath,cite}
+\usepackage{amssymb}
 \usepackage{graphicx}
 \usepackage{color}
 \usepackage{framed}
@@ -137,8 +138,35 @@ As a result, we combined the MSD with three benchmark audio collections: CAL500 
 To match these datasets to the clean MIDI subset, we used the Python search engine library Whoosh to perform a fuzzy matching of their metadata.
 This resulted in 26,311 audio/MIDI file pairs corresponding to 5,243 unique songs.
 
-\subsection{Audio-to-audio alignment}
+\subsection{Synthesized MIDI-to-audio alignment}
 
+Fuzzy metadata matching is not enough to ensure that we have correctly paired MIDI and audio files due to the following potential issues: The metadata could be incorrect, the fuzzy text match could have failed, the MIDI could be a very poor quality transcription (e.g. missing instruments or sections), and/or the MIDI and audio data could correspond to different versions of the same song.
+These pitfalls necessitate a method to ensure the correctness of each MIDI/audio file pairing.
+In additional, we need to align MIDI files to their corresponding audio recordings to use them as training data for our hashing model.
+A common method for performing this kind of alignment is to compute the dynamic time warping (DTW) path between sequences of feature vectors \cite{turetsky2003ground, hu2003polyphonic,ewert2012towards}.
+Conveniently, DTW reports a score which represents the quality of the alignment, and unsurprisingly this score tends to be very poor when nonmatching sequences are attempted to be aligned.
+An overview of DTW and its application to music can be found in \cite{muller2007information}.
+
+For our purposes, the reliability of the DTW confidence score is crucial because we will use it to decide when an audio/MIDI file pairing is valid and when an alignment can be used as training data for our hashing model.
+We experimented with a variety of approaches, and converged on the following system for aligning a single MIDI/audio file pair:
+First, we synthesize the MIDI data using \texttt{fluidsynth}\footnote{\texttt{http://www.fluidsynth.org}}.
+We then estimate the MIDI beat locations using the MIDI file's tempo change information and the method described in \cite{raffel2014pretty_midi}.
+To circumvent the common issue where the beat is tracked one-half beat out of phase, we double the BPM until it was at least 240.
+Using \texttt{librosa} \cite{mcfee2014librosa}, we compute beat locations for the audio signal with the constraint that the BPM should remain close to the global MIDI tempo. 
+We then compute log-amplitude beat-synchronous constant-Q transforms (CQTs) of audio and synthesized MIDI data with semitone frequency spacing and a frequency range from C3 (65.4 Hz) to C7 (1046.5 Hz), also using \texttt{librosa}.
+The resulting feature matrices are then of dimensionality $N \times D$ and $M \times D$ where $N$ and $M$ are the resulting number of beats in the MIDI and audio recordings respectively and $D$ is $48$ (the number of semitones between C3 and C7).
+
+We then use dynamic time warping to find the lowest-cost path through a full pairwise cosine similarity matrix $S \in \mathbb{R}^{N \times M}$ of the MIDI and audio CQTs.
+This path can be represented as a sequence $P \in \mathbb{R}^L$ of tuples of indices from each sequence such that $P[n] = (p, q)$ implies that the $p$th MIDI beat should be aligned to the $q$th audio beat.
+Traditional DTW requires that this path includes the start and end of each sequence, or equivalently that $P[1] = (1, 1)$ and $P[L] = (N, M)$.
+This approach is not valid when one sequence may be a subsequence of the other, which is often true in our problem setting due to the fact that the MSD 7digital audio recordings are cropped preview clips of the entire recordings.
+We therefore modify this constraint so that if $P[L] = (p, q)$ then either $gN \le p \le N$ or $gM \le q \le M$ where $g \approx 1$ is a parameter which provides a small amount of additional tolerance.
+We also include the typical modification of applying an additive penalty for ``non-diagonal moves'', i.e. path entries where if $P[n] = (p, q)$ then $P[n + 1] = (p, r)$ or $P[n] = (r, q)$.
+For synthesized MIDI-to-audio alignment, we used $g = .95$ and set the non-diagonal additive penality to the 90th percentile of $S$.
+
+(Listening to alignments to find a threshold)
+
+\subsection{Splitting the subset}`
 
 \section{Cross-Modality Hashing of MIDI and Audio Data}
 \label{sec:hashing}

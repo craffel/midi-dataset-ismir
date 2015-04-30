@@ -116,7 +116,7 @@ The goal of the present work is to develop an efficient way to match this corpus
 In order to evaluate our system, we need a collection of MIDI-audio pairs which we know are correctly matched.
 The accuracy of our approach can then be judged based on how accurately it is able to recover these pairings using the content of the audio and MIDI files alone.
 Fortunately, we identified a subset of files where the subdirectory of the file indicated the artist and the filename indicated the song title.
-By cleaning up this subset and using the resuling metadata to match its entries against the Million Song Dataset, we can obtain the requisite ground-truth set of MIDI-audio pairings.
+By cleaning up this subset and using the resulting metadata to match its entries against the Million Song Dataset, we can obtain the requisite ground-truth set of MIDI-audio pairings.
 We will refer to this collection of files as the ``clean MIDI subset''.
 
 A further data requirement for our system is a collection of feature vectors derived from audio and MIDI data which should be mapped to similar hashes.
@@ -144,7 +144,7 @@ Fuzzy metadata matching is not enough to ensure that we have correctly paired MI
 These pitfalls necessitate a method to ensure the correctness of each MIDI/audio file pairing.
 In additional, we need to align MIDI files to their corresponding audio recordings to use them as training data for our hashing model.
 A common method for performing this kind of alignment is to compute the dynamic time warping (DTW) path between sequences of feature vectors \cite{turetsky2003ground, hu2003polyphonic,ewert2012towards}.
-Conveniently, DTW reports a score which represents the quality of the alignment, and unsurprisingly this score tends to be very poor when nonmatching sequences are attempted to be aligned.
+Conveniently, DTW reports a score which represents the quality of the alignment, and unsurprisingly this score tends to be very poor when non-matching sequences are attempted to be aligned.
 An overview of DTW and its application to music can be found in \cite{muller2007information}.
 
 For our purposes, the reliability of the DTW confidence score is crucial because we will use it to decide when an audio/MIDI file pairing is valid and when an alignment can be used as training data for our hashing model.
@@ -158,11 +158,11 @@ The resulting feature matrices are then of dimensionality $N \times D$ and $M \t
 
 We then use dynamic time warping to find the lowest-cost path through a full pairwise cosine similarity matrix $S \in \mathbb{R}^{N \times M}$ of the MIDI and audio CQTs.
 This path can be represented as two sequences $p, q \in \mathbb{R}^L$ of indices from each sequence such that $p[i] = n, q[i] = m$ implies that the $n$th MIDI beat should be aligned to the $m$th audio beat.
-Traditional DTW requires that this path includes the start and end of each sequence, or equivalently that $p[1] = q[1] = 1; p[L] = N; p[L] = M$.
+Traditional DTW requires that this path includes the start and end of each sequence, or equivalently that $p[1] = q[1] = 1; p[L] = N; q[L] = M$.
 This approach is not valid when one sequence may be a subsequence of the other, which is often true in our problem setting due to the fact that, for example, the MSD 7digital audio recordings are cropped preview song clips.
 We therefore modify this constraint so that either $gN \le p[L] \le N$ or $gM \le q[L] \le M$ where $g \approx 1$ is a parameter which provides a small amount of additional tolerance.
 We also include the typical modification of applying an additive penalty for ``non-diagonal moves'', i.e. path entries where either $p[i] = p[i + 1]$ or $q[i] = q[i + 1]$.
-For synthesized MIDI-to-audio alignment, we used $g = .95$ and set the non-diagonal additive penality to the 90th percentile of $S$.
+For synthesized MIDI-to-audio alignment, we used $g = .95$ and set the non-diagonal additive penalty to the 90th percentile of $S$.
 
 (Listening to alignments to find a threshold)
 

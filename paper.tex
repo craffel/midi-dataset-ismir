@@ -190,10 +190,14 @@ In practice, we found these two normalization steps to be of critical importance
 
 In order to use our normalized DTW cost to determine when a match and alignment was successful, we need a threshold above which the DTW cost indicates a failure.
 To estimate this threshold, we manually auditioned 125 alignments and noted whether each was successful, where ``success'' requires that the audio and MIDI were well-synchronized for their entire duration.
-From this, we obtained an AUC-ROC score of $0.986$, indicating a highly reliable confidence metric.
+From this, we obtained an AUROC score of $0.986$, indicating a highly reliable confidence metric.
 As a threshold, we chose $0.78$, above which no alignments where labeled as successful.
+We discarded all MIDI/audio matches whose alignment resulted in DTW costs above this threshold, resulting in 10,035 successful alignments.
 
-\subsection{Splitting the subset}
+As mentioned above, we will be using these matched and aligned MIDI and audio files for two purposes: First, as training data for our hashing model; and second, to evaluate our efficient content-based matching system.
+For fair evaluation, it is critical that we do not test the matching system using any songs which were used to train the hashing model or to adjust the parameters of the matching system.
+We therefore split out $50\%$ of the successful alignments to use as training data, $25\%$ as a ``development set'' to tune the content-based matching system, and the remaining $25\%$ to use for final evaluation of our system.
+Due to duplication within and across datasets, care was taken to split based on \textit{songs}, rather than by entry.
 
 \section{Cross-Modality Hashing of MIDI and Audio Data}
 \label{sec:hashing}

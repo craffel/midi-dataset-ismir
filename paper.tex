@@ -178,12 +178,12 @@ $$
 Secondly, the scale of $S$ (and therefore the DTW cost) depends on how similar the synthesized audio is to the ``real'' audio recording, which is not an important factor in the alignment quality.
 This can be mitigated by normalizing the DTW cost by the mean value of the submatrix of $S$ through which the DTW past travels:
 $$
-\mathcal{N} = \sum_{i = \min(p)}^{\max(p)} \sum_{j = \min(q)}^{\max(q)} S[i, j] 
+\mathcal{B} = \sum_{i = \min(p)}^{\max(p)} \sum_{j = \min(q)}^{\max(q)} S[i, j] 
 $$
 These normalizations were also discussed in \cite{hu2003polyphonic}.
 Combining the above, we get our modified DTW cost $c$:
 $$
-c = \frac{1}{L \mathcal{N}} \sum_{i = 1}^L S[p[i], q[i]]
+c = \frac{1}{L \mathcal{B}} \sum_{i = 1}^L S[p[i], q[i]]
 $$
 In practice, we found these two normalization steps to be of critical importance for obtaining a reliable confidence score.
 
@@ -228,12 +228,28 @@ Our approach has the additional potential benefit of learning a representation f
 
 \subsection{Hashing with convolutional networks}
 
-Our hashing model is based on the siamese network architecture proposed in \cite{masci2014multimodal}.
-Given feature vectors from two modalities which are labeled as being similar or dissimilar, this approach attempts to learn a nonlinear mapping from each modality to a common Hamming space such that similar and dissimilar feature vectors are mapped to bitvectors with small and large Hamming distances respectively.
-This can be expressed as the loss function 
-$$
-\mathcal{L} = \frac{1}{|\mathcal{P}|} \sum_{(x, y) \in \mathcal{P}} \| f(x) - g(y) \|_2^2 - \alpha \frac{1}{\mathcal{N}} \sum_{(x, y) \in \mathcal{N}} \max(0, m - \|f(x) - g(y) \|_2)^2
-$$
+Our hashing model is based on the Siamese network architecture proposed in \cite{masci2014multimodal}.
+This approach considers the situation where we have feature vectors from two modalities, and two sets $\mathcal{P}$ and $\mathcal{N}$ which contain pairs of feature vectors from each modality such that if $(x, y) \in \mathcal{P}$ then $x$ and $y$ are considered ``similar'' and if $(x, y) \in \mathcal{N}$ they are ``dissimilar''.
+A nonlinear mapping is then learned from each modality to a common Hamming space such that similar and dissimilar feature vectors are respectively mapped to bitvectors with small and large Hamming distances.
+One possible objective function for this technique is
+\begin{align*}
+\mathcal{L} &= \frac{1}{|\mathcal{P}|} \sum_{(x, y) \in \mathcal{P}} \| f(x) - g(y) \|_2^2\\
+& - \frac{\alpha}{|\mathcal{N}|} \sum_{(x, y) \in \mathcal{N}} \max(0, m - \|f(x) - g(y) \|_2)^2
+\end{align*}
+where $f$ and $g$ are the nonlinear mappings for each modality, $\alpha$ is a regularization parameter which controls how important it is that the dissimilar pairs be mapped far apart, and $m$ is a threshold above which dissimilar pairs are considered sufficiently distant.
+
+Finding the nonlinear mappings $f$ and $g$ involves optimizing their parameters with respect to $\mathcal{L}$.
+The exact form of these nonlinearities is a system design choice; in \cite{masci2014multimodal} they are chosen to be multi-layer nonlinear networks.
+In the present work, we will use convolutional networks due to their ability to exploit invariances in the input feature representation.
+CQTs contain invariances in both the time and frequency axes, so convolutional networks are particularly well-suited for our task.
+
+In order to apply this technique, we also need to obtain the collections of pairs similar and dissimilar feature vectors $\mathcal{P}$ and $\mathcal{N}$.
+In our problem, our two feature modalities are CQTs from synthesized MIDI files and CQTs from audio files.
+A logical choice for $\mathcal{P}$ is to choose pairs of constant-Q spectra from simultaneous beats in successfully aligned MIDI/audio pairs.
+For example, if $A, B \in \mathbb{R}^{N \times D}$ are CQTs of an aligned MIDI and audio file respectively, then $\mathcal{P}$ will include $(A[1], B[1]), \ldots, (A[N], B[N])$.
+The choice of $\mathcal{N}$ is less obvious.
+We found that simply randomly choosing CQT spectra from non-aligned beats in our collection of aligned MIDI and audio files achieved satisfactory results.
+
 
 \section{Matching MIDI Files to the MSD}
 \label{sec:msd}

@@ -276,7 +276,8 @@ The first convolutional layer had 16 filters with a filter size of five beats by
 This choice was meant to provide some temporal context and octave invariance.
 As advocated by \cite{simonyan2014very}, all subsequent convolutional layers had $2^{n + 3}$ 3x3 filters, where $n$ is the depth of the layer.
 All pooling layers performed max-pooling, with a pooling size of 2x2.
-Finally, as advocated by \cite{he2015delving}, we initialized all weights with normally distributed random variables with zero mean and a standard deviation of $\sqrt{2/n_{in}}$, where $n_{in}$ is the number of inputs to each layer. 
+Finally, as advocated by \cite{he2015delving}, we initialized all weights with normally distributed random variables with zero mean and a standard deviation of $\sqrt{2/n_{in}}$, where $n_{in}$ is the number of inputs to each layer.
+Our model was implemented using Theano \cite{bastien2012theano} and \texttt{lasagne}.\footnote{\texttt{https://github.com/Lasagne/Lasagne}}
 
 To ensure good performance, we optimized all model hyperparameters using Whetlab,\footnote{\texttt{http://www.whetlab.com}} a web API which implements black-box Bayesian optimization \cite{snoek2012practical}.
 We used Whetlab to optimize the number of convolutional/pooling layers, the number and size of the fully-connected layers, the RMSProp learning rate and decay parameters, and the $\alpha$ and $m$ regularization parameters of $\mathcal{L}$.

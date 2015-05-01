@@ -4,6 +4,7 @@
 \usepackage{graphicx}
 \usepackage{color}
 \usepackage{framed}
+\usepackage{booktabs}
 
 \title{Large-Scale Content-Based Matching of MIDI and Audio Files}
 
@@ -300,19 +301,18 @@ Speedup: sim mtx is 50-300x faster, DTW is 4-15x faster.
 Result: Matching a single MIDI against the MSD takes a few minutes instead of a few hours; parallelized, we are able to match our entire MIDI dataset in 20 days.
 Future work: Pruning DTW calculations.
 
-\begin{figure}[h!]
-  \label{fig:percent_below_rank}
-  \centering
-    \includegraphics[width=\columnwidth]{percent_below_rank.png}
-  \caption{Percentage of hash matches below rank}
-\end{figure}
-
-\begin{figure}[h!]
-  \label{fig:rank_vs_score}
-  \centering
-    \includegraphics[width=\columnwidth]{rank_vs_score.png}
-  \caption{Hash match rank vs. DTW score with color corresponding to correct tempo}
-\end{figure}
+\begin{table}
+  \begin{center}
+    \begin{tabular}{@{}llllll@{}}
+      \toprule
+      \textbf{Rank} & 1 & 10 & 100 & 1000 & 10000 \\
+      \textbf{Percent $\le$} & 15.2 & 41.6 & 62.8 & 82.7 & 95.9 \\
+      \bottomrule
+    \end{tabular}
+  \end{center}
+  \caption{Percentage of MIDI-MSD pairs whose hash sequences had a rank better than each threshold.}
+  \label{tab:rank-percentages}
+\end{table}
 
 \bibliography{refs}
 

@@ -148,7 +148,7 @@ An overview of DTW and its application to music can be found in \cite{muller2007
 
 For our purposes, the reliability of the DTW confidence score is crucial because we will use it to decide when an audio/MIDI file pairing is valid and when an alignment can be used as training data for our hashing model.
 We experimented with a variety of approaches, and converged on the following system for aligning a single MIDI/audio file pair:
-First, we synthesize the MIDI data using \texttt{fluidsynth}\footnote{\texttt{http://www.fluidsynth.org}}.
+First, we synthesize the MIDI data using \texttt{fluidsynth}.\footnote{\texttt{http://www.fluidsynth.org}}
 We then estimate the MIDI beat locations using the MIDI file's tempo change information and the method described in \cite{raffel2014pretty_midi}.
 To circumvent the common issue where the beat is tracked one-half beat out of phase, we double the BPM until it was at least 240.
 Using \texttt{librosa} \cite{mcfee2014librosa}, we compute beat locations for the audio signal with the constraint that the BPM should remain close to the global MIDI tempo. 
@@ -211,7 +211,7 @@ This means that both computing the similarity matrix and calculating the DTW cos
 Unfortunately, the method described above does not meet this need.
 The median number of beats in the 7digital preview clips from the MSD and the MIDI files are 186 and 1218 respectively.
 Computing a cosine similarity matrix of this size (with a feature dimensionality of 48) using the highly optimized C++ code from \texttt{scipy} \cite{jones2014scipy} takes on average 9.82 milliseconds on a Intel Core i7-4930k processor.
-When implemented using the LLVM just-in-time compiler Python module \texttt{numba}\footnote{\texttt{http://numba.pydata.org/}}, the DTW cost calculation described above takes on average 892 microseconds on the same processor.
+When implemented using the LLVM just-in-time compiler Python module \texttt{numba},\footnote{\texttt{http://numba.pydata.org/}} the DTW cost calculation described above takes on average 892 microseconds on the same processor.
 It follows that matching a \textit{single} MIDI file to the MSD using this approach would take just under three hours.
 Clearly, a more efficient approach is necessary.
 
@@ -243,9 +243,9 @@ The exact form of these nonlinearities is a system design choice; in \cite{masci
 In the present work, we will use convolutional networks due to their ability to exploit invariances in the input feature representation.
 CQTs contain invariances in both the time and frequency axes, so convolutional networks are particularly well-suited for our task.
 
-In order to apply this technique, we also need to obtain the collections of pairs similar and dissimilar feature vectors $\mathcal{P}$ and $\mathcal{N}$.
+In order to apply this technique, we also need to obtain the collections of pairs of similar and dissimilar feature vectors $\mathcal{P}$ and $\mathcal{N}$.
 In our problem, our two feature modalities are CQTs from synthesized MIDI files and CQTs from audio files.
-A logical choice for $\mathcal{P}$ is to choose pairs of constant-Q spectra from simultaneous beats in successfully aligned MIDI/audio pairs.
+We therefore build $\mathcal{P}$ by choosing pairs of constant-Q spectra from simultaneous beats in successfully aligned MIDI/audio pairs.
 For example, if $A, B \in \mathbb{R}^{N \times D}$ are CQTs of an aligned MIDI and audio file respectively, then $\mathcal{P}$ will include $(A[1], B[1]), \ldots, (A[N], B[N])$.
 The choice of $\mathcal{N}$ is less obvious.
 We found that simply randomly choosing CQT spectra from non-aligned beats in our collection of aligned MIDI and audio files achieved satisfactory results.
@@ -302,14 +302,14 @@ Future work: Pruning DTW calculations.
 \begin{figure}[h!]
   \label{fig:percent_below_rank}
   \centering
-    \includegraphics[width=0.5\textwidth]{percent_below_rank.png}
+    \includegraphics[width=\columnwidth]{percent_below_rank.png}
   \caption{Percentage of hash matches below rank}
 \end{figure}
 
 \begin{figure}[h!]
   \label{fig:rank_vs_score}
   \centering
-    \includegraphics[width=0.5\textwidth]{rank_vs_score.png}
+    \includegraphics[width=\columnwidth]{rank_vs_score.png}
   \caption{Hash match rank vs. DTW score with color corresponding to correct tempo}
 \end{figure}
 

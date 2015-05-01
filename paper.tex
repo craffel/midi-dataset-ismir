@@ -101,8 +101,7 @@ Specifically, by mapping to a Hamming space we greatly speed up distance matrix 
 
 In the following section, we detail the dataset of MIDI files we scraped from the Internet and describe how we prepared a subset for training our hasher.
 Our cross-modality hashing model is then described in Section \ref{sec:hashing}.
-In Section \ref{sec:dtw}, we cover our fast hash sequence DTW method and its accompanying pruning techniques.
-Finally, we evaluate our system's performance on the task of matching files from our MIDI dataset to entries in the Million Song Dataset \cite{bertin2011million}.
+Finally, in section \ref{sec:msd} we evaluate our system's performance on the task of matching files from our MIDI dataset to entries in the Million Song Dataset \cite{bertin2011million}.
 
 \section{Preparing Data}
 \label{sec:dataset}
@@ -202,8 +201,6 @@ Due to duplication within and across datasets, care was taken to split based on 
 \section{Cross-Modality Hashing of MIDI and Audio Data}
 \label{sec:hashing}
 
-\section{Fast DTW Matching of Hash Sequences}
-\label{sec:dtw}
 
 \section{Matching MIDI Files to the MSD}
 \label{sec:msd}

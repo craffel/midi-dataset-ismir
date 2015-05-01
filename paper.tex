@@ -250,9 +250,40 @@ For example, if $A, B \in \mathbb{R}^{N \times D}$ are CQTs of an aligned MIDI a
 The choice of $\mathcal{N}$ is less obvious.
 We found that simply randomly choosing CQT spectra from non-aligned beats in our collection of aligned MIDI and audio files achieved satisfactory results.
 
+\subsection{System specifics}
 
-\section{Matching MIDI Files to the MSD}
-\label{sec:msd}
+Training our hashing model involves presenting it with training examples and backpropagating the gradient of $\mathcal{L}$ through the model parameters.
+Our dataset is the collection of successfully aligned MIDI and audio CQTs described in Section \ref{sec:dataset}.
+We split this collection into 90\% train and 10\% validation, where the validation set was not used to optimize the model parameters.
+We z-scored the entire training set across feature dimensions and re-used the mean and standard deviation from the training set to z-score the validation set.
+
+For efficiency, we used minibatches of training examples; each minibatch consisted of 50 subsequences, each of of length 100.
+These minibatches were extracted by choosing a random offset for each training sequence pair and cropping out a subsequence of length 100.
+For $\mathcal{N}$, we simply presented the network with mismatched pairs of subsequences; that is, if $(x, y) \in \mathcal{N}$ then $x$ and $y$ were subsequences from different songs.
+Once the network had trained on minibatches from the entire training set (one epoch), we repeated the random sampling process. 
+For optimization, we used RMSProp, a recently proposed stochastic optimization technique \cite{tieleman2012lecture}.
+Every 100 minibatches, we computed the loss $\mathcal{L}$ on the validation set.
+If the validation loss was less than $99\%$ of the previous lowest, we trained for 1000 more iterations (minibatches).
+
+While the validation loss is a reasonable indicator of network performance, its scale will vary depending on the $\alpha$ and $m$ regularization hyperparameters.
+To obtain a more consistent metric, we also computed the distribution of distances between the pairs in $\mathcal{P}$ and those in $\mathcal{N}$.
+If these distributions are well-separated, we can assume that the network is performing well.
+We therefore used the Bhattacharyya distance between these distributions as an alternate performance metric \cite{bhattacharyya1943measure}.
+
+The hashing networks for each modality were chosen to have the same architecture: A series of alternating convolutional and pooling layers followed by a series of fully-connected layers.
+All convolutional and fully-connected layers used rectifier nonlinearities except the final output layer, which (as in \cite{masci2014multimodal}) used a hyperbolic tangent nonlinearity.
+The first convolutional layer had 16 filters with a filter size of five beats by twelve semitones.
+This choice was meant to provide some temporal context and octave invariance.
+As advocated by \cite{simonyan2014very}, all subsequent convolutional layers had $2^{n + 3}$ 3x3 filters, where $n$ is the depth of the layer.
+All pooling layers performed max-pooling, with a pooling size of 2x2.
+Finally, as advocated by \cite{he2015delving}, we initialized all weights with normally distributed random variables with zero mean and a standard deviation of $\sqrt{2/n_{in}}$, where $n_{in}$ is the number of inputs to each layer. 
+
+To ensure good performance, we optimized all model hyperparameters using Whetlab,\footnote{\texttt{http://www.whetlab.com}} a web API which implements black-box Bayesian optimization \cite{snoek2012practical}.
+We used Whetlab to optimize the number of convolutional/pooling layers, the number and size of the fully-connected layers, the RMSProp learning rate and decay parameters, and the $\alpha$ and $m$ regularization parameters of $\mathcal{L}$.
+As a hyperparameter optimization objective, we used the Bhattacharyya distance approach described above.
+The best performing network found by Whetlab had 2 convolutional layers, 2 ``hidden'' fully-connected layers of with 2048 units in addition to a fully-connected output layer, a learning rate of .001 with a decay parameter of .65, and $\alpha = .5$ and $m = 4$.
+This hyperparameter configuration yielded a Bhattacharya distance of $0.488$, indicating a strong separation between distances in $\mathcal{P}$ and distances in $\mathcal{N}$.
+\textit{should maybe include a plot here of in-class/out-of-class distribution}
 
 \bibliography{refs}
 

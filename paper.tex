@@ -201,6 +201,39 @@ Due to duplication within and across datasets, care was taken to split based on 
 \section{Cross-Modality Hashing of MIDI and Audio Data}
 \label{sec:hashing}
 
+It would be straightforward to use our alignment scheme to match MIDI files with no metadata to entries in a dataset of song recordings.
+The size of our entire MIDI dataset (140,910 files) suggests that we should use as large of an audio corpus as possible in hopes that an audio recording of the song corresponding to each MIDI file appears in the corpus.
+Towards that end, we will be matching against the Million Song Dataset, the largest standard corpus of popular music recordings.
+This necessitates about one million similarity matrix and DTW cost calculations for each MIDI file.
+Given the size of our MIDI dataset, if a single MIDI-file-to-audio-dataset matching takes more than a few seconds, matching our entire MIDI dataset would be infeasible.
+This means that both computing the similarity matrix and calculating the DTW cost for each MIDI/audio pair must take at most tens of microseconds.
+
+Unfortunately, the method described above does not meet this need.
+The median number of beats in the 7digital preview clips from the MSD and the MIDI files are 186 and 1218 respectively.
+Computing a cosine similarity matrix of this size (with a feature dimensionality of 48) using the highly optimized C++ code from \texttt{scipy} \cite{jones2014scipy} takes on average 9.82 milliseconds on a Intel Core i7-4930k processor.
+When implemented using the LLVM just-in-time compiler Python module \texttt{numba}\footnote{\texttt{http://numba.pydata.org/}}, the DTW cost calculation described above takes on average 892 microseconds on the same processor.
+It follows that matching a \textit{single} MIDI file to the MSD using this approach would take just under three hours.
+Clearly, a more efficient approach is necessary.
+
+Calculating the similarity matrix and the DTW cost are both $\mathcal{O}(NM)$ in complexity.
+The fact that computing the similarity matrix takes about 10 times longer is then likely due to the fact that computing each entry in the similarity matrix involves $D$ each of multiply and addition operations.
+It follows that calculating the distance between feature vectors is a bottleneck in our system.
+In addition, any reduction in the number of feature vectors (beats) in each sequence will give quadratic speed gains for both DTW and similarity matrix calculations.
+
+Motivated by these issues, we propose a system which learns a common representation for the audio and MIDI CQTs in a Hamming space.
+By replacing constant-Q spectra with bitvectors, we replace the expensive distance computation with an exclusive-or operation followed by simple table lookup.
+This is thanks to the fact that computing the exlcusive-or of two bitvectors $a$ and $b$ will yield a bitvector with $1$s in the dimensions where $a$ and $b$ differ and $0$s elsewhere, and that the number of $1$s in all bitvectors of length $D$ can be precomputed and stored in a table of size $2^D$.
+In the course of computing our Hamming space representation, we also implicitly downsample the sequences over time, which provides speedups for both similarity matrix and DTW calculation.
+Our approach has the additional potential benefit of learning a representation for comparing audio and MIDI constant-Q spectra, rather than simply using the cosine distance.
+
+\subsection{Hashing with convolutional networks}
+
+Our hashing model is based on the siamese network architecture proposed in \cite{masci2014multimodal}.
+Given feature vectors from two modalities which are labeled as being similar or dissimilar, this approach attempts to learn a nonlinear mapping from each modality to a common Hamming space such that similar and dissimilar feature vectors are mapped to bitvectors with small and large Hamming distances respectively.
+This can be expressed as the loss function 
+$$
+\mathcal{L} = \frac{1}{|\mathcal{P}|} \sum_{(x, y) \in \mathcal{P}} \| f(x) - g(y) \|_2^2 - \alpha \frac{1}{\mathcal{N}} \sum_{(x, y) \in \mathcal{N}} \max(0, m - \|f(x) - g(y) \|_2)^2
+$$
 
 \section{Matching MIDI Files to the MSD}
 \label{sec:msd}

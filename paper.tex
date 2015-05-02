@@ -155,6 +155,7 @@ To circumvent the common issue where the beat is tracked one-half beat out of ph
 Using \texttt{librosa} \cite{mcfee2014librosa}, we compute beat locations for the audio signal with the constraint that the BPM should remain close to the global MIDI tempo. 
 We then compute log-amplitude beat-synchronous constant-Q transforms (CQTs) of audio and synthesized MIDI data with semitone frequency spacing and a frequency range from C3 (65.4 Hz) to C7 (1046.5 Hz), also using \texttt{librosa}.
 The resulting feature matrices are then of dimensionality $N \times D$ and $M \times D$ where $N$ and $M$ are the resulting number of beats in the MIDI and audio recordings respectively and $D$ is $48$ (the number of semitones between C3 and C7).
+Example CQTs computed from a 7digital preview clip and from a synthesized MIDI file can be seen in Figure \ref{fig:simdtw}(a) and \ref{fig:simdtw}(b) respectively.
 
 \begin{figure*}
   \includegraphics[width=\textwidth]{sims_and_dtws.pdf}
@@ -165,6 +166,7 @@ The resulting feature matrices are then of dimensionality $N \times D$ and $M \t
 	   (d) Hash sequence for synthesized MIDI.
 	   (e) Similarity matrix and DTW path (displayed as a white dotted line) for CQTs.
 	   (f) Similarity matrix and DTW path for hash sequences.}
+  \label{fig:simdtw}
 \end{figure*}
 
 We then use dynamic time warping to find the lowest-cost path through a full pairwise cosine similarity matrix $S \in \mathbb{R}^{N \times M}$ of the MIDI and audio CQTs.
@@ -174,6 +176,7 @@ This approach is not valid when one sequence may be a subsequence of the other, 
 We therefore modify this constraint so that either $gN \le p[L] \le N$ or $gM \le q[L] \le M$ where $g \approx 1$ is a parameter which provides a small amount of additional tolerance.
 We also include the typical modification of applying an additive penalty for ``non-diagonal moves'', i.e. path entries where either $p[i] = p[i + 1]$ or $q[i] = q[i + 1]$.
 For synthesized MIDI-to-audio alignment, we used $g = .95$ and set the non-diagonal additive penalty to the 90th percentile of $S$.
+The cosine similarity matrix and the lowest-cost DTW path for the CQTs shown in Figure \ref{fig:simdtw}(a) and \ref{fig:simdtw}(b) can be seen in Figure \ref{fig:simdtw}(e).
 
 \subsection{DTW cost as confidence score}
 

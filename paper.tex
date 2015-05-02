@@ -156,6 +156,17 @@ Using \texttt{librosa} \cite{mcfee2014librosa}, we compute beat locations for th
 We then compute log-amplitude beat-synchronous constant-Q transforms (CQTs) of audio and synthesized MIDI data with semitone frequency spacing and a frequency range from C3 (65.4 Hz) to C7 (1046.5 Hz), also using \texttt{librosa}.
 The resulting feature matrices are then of dimensionality $N \times D$ and $M \times D$ where $N$ and $M$ are the resulting number of beats in the MIDI and audio recordings respectively and $D$ is $48$ (the number of semitones between C3 and C7).
 
+\begin{figure*}
+  \includegraphics[width=\textwidth]{sims_and_dtws.pdf}
+  \caption{Audio and hash-based features and alignment for Billy Idol - ``Dancing With Myself'' (MSD track ID \texttt{TRCZQLG128F427296A}).
+           (a) Normalized constant-Q transform of 7digital preview clip, with beat indices and semitones on the horizontal and vertical axes respectively.
+	   (b) Normalized CQT for synthesized MIDI file.
+	   (c) Hash bitvector sequence for 7digital preview clip, with pooled beat indices and Hamming space dimension on the horizontal and vertical axes respectively.
+	   (d) Hash sequence for synthesized MIDI.
+	   (e) Similarity matrix and DTW path (displayed as a white dotted line) for CQTs.
+	   (f) Similarity matrix and DTW path for hash sequences.}
+\end{figure*}
+
 We then use dynamic time warping to find the lowest-cost path through a full pairwise cosine similarity matrix $S \in \mathbb{R}^{N \times M}$ of the MIDI and audio CQTs.
 This path can be represented as two sequences $p, q \in \mathbb{R}^L$ of indices from each sequence such that $p[i] = n, q[i] = m$ implies that the $n$th MIDI beat should be aligned to the $m$th audio beat.
 Traditional DTW requires that this path includes the start and end of each sequence, or equivalently that $p[1] = q[1] = 1; p[L] = N; q[L] = M$.

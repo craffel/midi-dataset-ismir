@@ -234,7 +234,7 @@ In addition, any reduction in the number of feature vectors (beats) in each sequ
 
 Motivated by these issues, we propose a system which learns a common representation for the audio and MIDI CQTs in a Hamming space.
 By replacing constant-Q spectra with bitvectors, we replace the expensive distance computation with an exclusive-or operation followed by simple table lookup.
-This is thanks to the fact that computing the exlcusive-or of two bitvectors $a$ and $b$ will yield a bitvector with $1$s in the dimensions where $a$ and $b$ differ and $0$s elsewhere, and that the number of $1$s in all bitvectors of length $D$ can be precomputed and stored in a table of size $2^D$.
+This is thanks to the fact that computing the exclusive-or of two bitvectors $a$ and $b$ will yield a bitvector with $1$s in the dimensions where $a$ and $b$ differ and $0$s elsewhere, and that the number of $1$s in all bitvectors of length $D$ can be precomputed and stored in a table of size $2^D$.
 In the course of computing our Hamming space representation, we also implicitly downsample the sequences over time, which provides speedups for both similarity matrix and DTW calculation.
 Our approach has the additional potential benefit of learning a representation for comparing audio and MIDI constant-Q spectra, rather than simply using the cosine distance.
 
@@ -289,13 +289,13 @@ The first convolutional layer had 16 filters with a filter size of five beats by
 As advocated by \cite{simonyan2014very}, all subsequent convolutional layers had $2^{n + 3}$ 3x3 filters, where $n$ is the depth of the layer.
 All pooling layers performed max-pooling, with a pooling size of 2x2.
 Finally, as advocated by \cite{he2015delving}, we initialized all weights with normally distributed random variables with zero mean and a standard deviation of $\sqrt{2/n_{in}}$, where $n_{in}$ is the number of inputs to each layer.
-Our model was implemented using Theano \cite{bastien2012theano} and \texttt{lasagne}.\footnote{\texttt{https://github.com/Lasagne/Lasagne}}
+Our model was implemented using \texttt{theano} \cite{bastien2012theano} and \texttt{lasagne}.\footnote{\texttt{https://github.com/Lasagne/Lasagne}}
 
 To ensure good performance, we optimized all model hyperparameters using Whetlab,\footnote{\texttt{http://www.whetlab.com}} a web API which implements black-box Bayesian optimization \cite{snoek2012practical}.
 We used Whetlab to optimize the number of convolutional/pooling layers, the number and size of the fully-connected layers, the RMSProp learning rate and decay parameters, and the $\alpha$ and $m$ regularization parameters of $\mathcal{L}$.
 As a hyperparameter optimization objective, we used the Bhattacharyya distance approach described above.
 The best performing network found by Whetlab had 2 convolutional layers, 2 ``hidden'' fully-connected layers of with 2048 units in addition to a fully-connected output layer, a learning rate of .001 with a decay parameter of .65, and $\alpha = .5$ and $m = 4$.
-This hyperparameter configuration yielded the output hash distance distributions for $\mathcal{P}$ and $\mathcal{N}$ shown in Figure \ref{fig:distances}, which resulted in a Bhattacharryya distance of $0.488$.
+This hyperparameter configuration yielded the output hash distance distributions for $\mathcal{P}$ and $\mathcal{N}$ shown in Figure \ref{fig:distances}, which resulted in a Bhattacharyya distance of $0.488$.
 
 \begin{figure}
   \includegraphics[width=\columnwidth]{hash_distributions.pdf}

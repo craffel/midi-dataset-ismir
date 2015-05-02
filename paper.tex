@@ -139,6 +139,7 @@ To match these datasets to the clean MIDI subset, we used the Python search engi
 This resulted in 26,311 audio/MIDI file pairs corresponding to 5,243 unique songs.
 
 \subsection{Synthesized MIDI-to-audio alignment}
+\label{sec:alignment}
 
 Fuzzy metadata matching is not enough to ensure that we have correctly paired MIDI and audio files due to the following potential issues: The metadata could be incorrect, the fuzzy text match could have failed, the MIDI could be a very poor quality transcription (e.g. missing instruments or sections), and/or the MIDI and audio data could correspond to different versions of the same song.
 These pitfalls necessitate a method to ensure the correctness of each MIDI/audio file pairing.
@@ -288,6 +289,7 @@ We therefore used the Bhattacharyya distance between these distributions as an a
 The hashing networks for each modality were chosen to have the same architecture: A series of alternating convolutional and pooling layers followed by a series of fully-connected layers.
 All convolutional and fully-connected layers used rectifier nonlinearities except the final output layer, which (as in \cite{masci2014multimodal}) used a hyperbolic tangent nonlinearity.
 This choice allows us to obtain binary hash vectors by testing whether each output unit is greater or less than zero.
+We chose an output dimensionality of 16, motivated by the fact that bitvectors of this dimensionality can be efficiently stored as 16 bit unsigned integers.
 The first convolutional layer had 16 filters with a filter size of five beats by twelve semitones, which gives our network some temporal context and octave invariance.
 As advocated by \cite{simonyan2014very}, all subsequent convolutional layers had $2^{n + 3}$ 3x3 filters, where $n$ is the depth of the layer.
 All pooling layers performed max-pooling, with a pooling size of 2x2.
@@ -309,16 +311,29 @@ This hyperparameter configuration yielded the output hash distance distributions
 \section{Matching MIDI Files to the MSD}
 \label{sec:msd}
 
-Given trained networks, we hash the entire MSD and all MIDIs.
-For each MIDI, we compute the DTW distance in the same way as above except that gully = .9 and penalty = 4 and we don't normalize by sim mtx mean.
-Because we already matched and aligned, we can look at the rank of the correct match.
-We can compute the proportion of matches below a given rank threshold: 1, 13.3\%; 10, 42.3\%, 100, 64.4\%; 1000, 83.3\% - show a plot of this.
-We can't solely rely on hash matching, but it can prune out order of magnitude of possibilities with a small loss in accuracy.
-We can compute the mean reciprocal rank - .2314.
-Most errors caused by incorrect tempo match - show plot of rank vs score with color corresponding to whether the tempo matched.
-Speedup: sim mtx is 50-300x faster, DTW is 4-15x faster.
-Result: Matching a single MIDI against the MSD takes a few minutes instead of a few hours; parallelized, we are able to match our entire MIDI dataset in 20 days.
-Future work: Pruning DTW calculations.
+After training our hashing system as described above, the process of matching MIDI collections to the MSD proceeds as follows:
+First, we precompute hash sequences for every 7digital preview clip and every MIDI file in the clean MIDI subset.
+Note that in this setting we are not computing feature sequences for known MIDI/audio pairs, so we cannot force the audio's beat tracking tempo to be the same as the MIDI's; instead, we estimate their tempos independently.
+Then, we compute the DTW distance in the manner described in Section \ref{sec:alignment} between every audio and MIDI hash sequence.
+We can evaluate our system's performance based on how well it recovers the MIDI-audio pairs whose beat-synchronous CQTs produced a DTW score below our chosen threshold.
+
+We tuned the parameters of the DTW cost calculation based on the results using the ``development'' set of successfully aligned MIDI/MSD pairs.
+For $g$, we found it beneficial to use a smaller value of $g = 0.9$.
+Using a fixed value for the non-diagonal move penalty avoids the percentile calculation on the simiarity matrix, so we chose $p = 4$.
+Finally, we found that it did not help to normalize by the average distance value $\mathcal{B}$, so we skipped this step.
+
+\subsection{Results}
+
+Bitvector sequences for the CQTs shown in Figure \ref{fig:simdtw}(a) and \ref{fig:simdtw}(b) can be seen in \ref{fig:simdtw}(c) and \ref{fig:simdtw}(d) respectively.
+Note that because our networks contain two pooling layers, each of which downsamples by 2 in the time dimension, the number of bitvectors is $\frac{1}{4}$ of the number of constant-Q spectra for each sequence.
+The Hamming distance similarity matrix and lowest-cost DTW path for the hash sequences can be seen in Figure \ref{fig:simdtw}(f). 
+For this example, it exhibits the same structure as the CQT-based cosine similarity matrix shown in \ref{fig:simdtw}(e), and the same DTW path was recovered successfully.
+
+To evaluate our system, note that we know ahead of time which MSD entry each MIDI should match to based on the metadata-based matching and CQT-based DTW score we precomputed.
+A useful metric for is therefore to rank MSD entries according to their hash sequence DTW distance to a given MIDI file.
+We can then determine the rank of the correct match for each MIDI file.
+In this setting, a common way to evaluate performance is to compute the mean reciprocal rank; on our test set, we achieved a value of \textbf{$0.241$}, indicating that the correct matches tended to be ranked highly.
+We find that a more informative metric is to compute the percentage of MIDI files in our test set whose correct match ranked below a certain threshold; this metric is shown for various thresholds in Table \ref{tab:rank-percentages}.
 
 \begin{table}
   \begin{center}
@@ -332,6 +347,29 @@ Future work: Pruning DTW calculations.
   \caption{Percentage of MIDI-MSD pairs whose hash sequences had a rank better than each threshold.}
   \label{tab:rank-percentages}
 \end{table}
+
+Studying Table \ref{tab:rank-percentages} reveals that we can't rely on the hash sequence for the correct MSD entry being matched to MIDI hash sequence exactly, i.e. the DTW distance for correct matches is only the smallest across the entire MSD about 15.2\% of time.
+Furthermore, for a significant portion of our MIDI files, the correct match did not rank in the top 1000.
+We found that this was usually caused by the MIDI file being beat tracked at a different tempo than the audio file, which inflated the DTW score.
+For some of the MIDI files whose ranks were small but not 1, the MIDI file was erroneously matched to a different version (cover, remix, etc.) of the correct entry.
+Finally, some degree of inaccuracy can be attributed to the fact that our hashing model is not perfect and the MSD is large.
+So, in a relatively small proportion of cases, the MIDI hash sequence ended up being very similar to many MSD hash sequences, and so the correct entry was not ranked first.
+
+Because our system does not uniformly assign the lowest DTW score to the correct MSD entry for our MIDI files, it is more realistic to look at our system as a pruning technique; that is, it can be used to discard MSD entries which we can be reasonably confident are not the correct match for a given MIDI file.
+For example, if we use our system to compute the hash-based DTW score between a MIDI file and every entry in the MSD, we can discard all but 1\% of the MSD and only risk discarding the correct match about 4.1\% of the time.
+Pruning methods are only valuable when they are substantially faster than performing the original computation; fortunately, our approach is orders of magnitude faster:
+For the median hash sequence lengths, calculating a Hamming distance similarity matrix between hash sequences is about 400 times faster than computing the CQT cosine similarity matrix (24.8 microseconds vs. 9.82 milliseconds) and computing the DTW score is about 9 times faster (892 microseconds vs. 106 microseconds).
+These speedups can be attributed to the fact that computing a table lookup is much more efficient than computing the cosine similarity between two vectors and that, thanks to downsampling, our hash-based similarity matrices have $\frac{1}{16}$ of the entries of the CQT-based ones.
+In summary, a straightforward way to describe the success of our system is to observe that we can, with high confidence, discard all but 1\% of the entries of the MSD by performing a calculation that takes about as much time as matching against 1\% of the MSD.
+
+\section{Future work}
+
+Many pruning techniques have been proposed for the general case of large-scale DTW search; an overview can be found in \cite{rakthanmanon2012searching}.
+Applying these approaches to our current system would allow for further speed improvements.
+Unfortunately, most of these techniques rely on the assumption that the query sequence is of the same length as all of the sequences in the database, so they would need to be modified before applying them to our problem.
+In terms of accuracy, as noted above most of our hash-match failures can be attributed to erroneous beat tracking.
+With a better beat tracking system or with added robustness to this kind of error, we could improve the pruning ability of our approach.
+Even without these improvements, our system can, in a reasonable amount of time, tackle the problem we set out to solve: Resolving our huge MIDI collection against the MSD.
 
 \bibliography{refs}
 

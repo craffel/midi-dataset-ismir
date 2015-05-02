@@ -278,14 +278,14 @@ Every 100 minibatches, we computed the loss $\mathcal{L}$ on the validation set.
 If the validation loss was less than $99\%$ of the previous lowest, we trained for 1000 more iterations (minibatches).
 
 While the validation loss is a reasonable indicator of network performance, its scale will vary depending on the $\alpha$ and $m$ regularization hyperparameters.
-To obtain a more consistent metric, we also computed the distribution of distances between the pairs in $\mathcal{P}$ and those in $\mathcal{N}$.
+To obtain a more consistent metric, we also computed the distribution of distances between the hash vectors produced by the network for the pairs in $\mathcal{P}$ and those in $\mathcal{N}$.
 If these distributions are well-separated, we can assume that the network is performing well.
 We therefore used the Bhattacharyya distance between these distributions as an alternate performance metric \cite{bhattacharyya1943measure}.
 
 The hashing networks for each modality were chosen to have the same architecture: A series of alternating convolutional and pooling layers followed by a series of fully-connected layers.
 All convolutional and fully-connected layers used rectifier nonlinearities except the final output layer, which (as in \cite{masci2014multimodal}) used a hyperbolic tangent nonlinearity.
-The first convolutional layer had 16 filters with a filter size of five beats by twelve semitones.
-This choice was meant to provide some temporal context and octave invariance.
+This choice allows us to obtain binary hash vectors by testing whether each output unit is greater or less than zero.
+The first convolutional layer had 16 filters with a filter size of five beats by twelve semitones, which gives our network some temporal context and octave invariance.
 As advocated by \cite{simonyan2014very}, all subsequent convolutional layers had $2^{n + 3}$ 3x3 filters, where $n$ is the depth of the layer.
 All pooling layers performed max-pooling, with a pooling size of 2x2.
 Finally, as advocated by \cite{he2015delving}, we initialized all weights with normally distributed random variables with zero mean and a standard deviation of $\sqrt{2/n_{in}}$, where $n_{in}$ is the number of inputs to each layer.
@@ -295,8 +295,13 @@ To ensure good performance, we optimized all model hyperparameters using Whetlab
 We used Whetlab to optimize the number of convolutional/pooling layers, the number and size of the fully-connected layers, the RMSProp learning rate and decay parameters, and the $\alpha$ and $m$ regularization parameters of $\mathcal{L}$.
 As a hyperparameter optimization objective, we used the Bhattacharyya distance approach described above.
 The best performing network found by Whetlab had 2 convolutional layers, 2 ``hidden'' fully-connected layers of with 2048 units in addition to a fully-connected output layer, a learning rate of .001 with a decay parameter of .65, and $\alpha = .5$ and $m = 4$.
-This hyperparameter configuration yielded a Bhattacharya distance of $0.488$, indicating a strong separation between distances in $\mathcal{P}$ and distances in $\mathcal{N}$.
-\textit{should maybe include a plot here of in-class/out-of-class distribution}
+This hyperparameter configuration yielded the output hash distance distributions for $\mathcal{P}$ and $\mathcal{N}$ shown in Figure \ref{fig:distances}, which resulted in a Bhattacharryya distance of $0.488$.
+
+\begin{figure}
+  \includegraphics[width=\columnwidth]{hash_distributions.pdf}
+  \caption{Output hash distance distributions for our best-performing network.}
+  \label{fig:distances}
+\end{figure}
 
 \section{Matching MIDI Files to the MSD}
 \label{sec:msd}

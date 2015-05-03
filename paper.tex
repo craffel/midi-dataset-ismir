@@ -175,31 +175,32 @@ This path can be represented as two sequences $p, q \in \mathbb{R}^L$ of indices
 Traditional DTW requires that this path includes the start and end of each sequence, or equivalently that $p[1] = q[1] = 1; p[L] = N; q[L] = M$.
 This approach is not valid when one sequence may be a subsequence of the other, which is often true in our problem setting due to the fact that, for example, the MSD 7digital audio recordings are cropped preview song clips.
 We therefore modify this constraint so that either $gN \le p[L] \le N$ or $gM \le q[L] \le M$ where $g \approx 1$ is a parameter which provides a small amount of additional tolerance.
-We also include the typical modification of applying an additive penalty for ``non-diagonal moves'', i.e. path entries where either $p[i] = p[i + 1]$ or $q[i] = q[i + 1]$.
-For synthesized MIDI-to-audio alignment, we used $g = .95$ and set the non-diagonal additive penalty to the 90th percentile of $S$.
+We also include the typical modification of applying an additive penalty $\phi$ for ``non-diagonal moves'', i.e. path entries where either $p[i] = p[i + 1]$ or $q[i] = q[i + 1]$.
+For synthesized MIDI-to-audio alignment, we used $g = .95$ and set $\phi$ to the 90th percentile of $S$.
 The cosine similarity matrix and the lowest-cost DTW path for the CQTs shown in Figure \ref{fig:simdtw}(a) and \ref{fig:simdtw}(b) can be seen in Figure \ref{fig:simdtw}(e).
 
 \subsection{DTW cost as confidence score}
 
 The ``cost'' of a DTW path $p, q$ through $S$ is calculated by the sum of the distances between the aligned entries of each sequence, or
 $$
-\sum_{i = 1}^L S[p[i], q[i]]
+c = \sum_{i = 1}^L \begin{cases}
+  S[p[i], q[i]] + \phi & p[i] = p[i - 1] \\
+  S[p[i], q[i]] + \phi & q[i] = q[i - 1] \\
+  S[p[i], q[i]] & \mathrm{otherwise}
+\end{cases}
 $$
 As-is, the DTW cost is not an appropriate confidence score for alignment/match quality in our application primarily for two reasons.
 First of all, the path length can vary greatly across MIDI/audio file pairs depending on $N$ and $M$.
-We therefore compute the \textit{mean} distance between aligned constant-Q spectra across the path instead of the sum of distances:
-$$
-\frac{1}{L}\sum_{i = 1}^L S[p[i], q[i]]
-$$
+We therefore compute the \textit{mean} distance between aligned constant-Q spectra across the path instead of the sum of distances by dividing $c$ by $L$.
 Secondly, the scale of $S$ (and therefore the DTW cost) depends on how similar the synthesized audio is to the ``real'' audio recording, which is not an important factor in the alignment quality.
 This can be mitigated by normalizing the DTW cost by the mean value of the submatrix of $S$ through which the DTW past travels:
 $$
 \mathcal{B} = \sum_{i = \min(p)}^{\max(p)} \sum_{j = \min(q)}^{\max(q)} S[i, j] 
 $$
 These normalizations were also discussed in \cite{hu2003polyphonic}.
-Combining the above, we get our modified DTW cost $c$:
+Combining the above, we get our modified DTW cost 
 $$
-c = \frac{1}{L \mathcal{B}} \sum_{i = 1}^L S[p[i], q[i]]
+\hat{c} = \frac{c}{L\mathcal{B}}
 $$
 In practice, we found these two normalization steps to be of critical importance for obtaining a reliable confidence score.
 
@@ -319,7 +320,7 @@ We can evaluate our system's performance based on how well it recovers the MIDI-
 
 We tuned the parameters of the DTW cost calculation based on the results using the ``development'' set of successfully aligned MIDI/MSD pairs.
 For $g$, we found it beneficial to use a smaller value of $g = 0.9$.
-Using a fixed value for the non-diagonal move penalty avoids the percentile calculation on the simiarity matrix, so we chose $p = 4$.
+Using a fixed value for the non-diagonal move penalty avoids the percentile calculation on the simiarity matrix, so we chose $\phi = 4$.
 Finally, we found that it did not help to normalize by the average distance value $\mathcal{B}$, so we skipped this step.
 
 \subsection{Results}

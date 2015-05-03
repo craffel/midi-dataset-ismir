@@ -208,6 +208,7 @@ In order to use our normalized DTW cost to determine when a match and alignment 
 To estimate this threshold, we manually auditioned 125 alignments and noted whether each was successful, where ``success'' requires that the audio and MIDI were well-synchronized for their entire duration.
 From this, we obtained an AUROC score of $0.986$, indicating a highly reliable confidence metric.
 As a threshold, we chose $0.78$, above which no alignments where labeled as successful.
+In the collection of alignments we audited, using this threshold resulted in $15$ correct alignments which were falsely labeled as incorrect.
 We discarded all MIDI/audio matches whose alignment resulted in DTW costs above this threshold, resulting in 10,035 successful alignments.
 
 As mentioned above, we will be using these matched and aligned MIDI and audio files for two purposes: First, as training data for our hashing model; and second, to evaluate our efficient content-based matching system.

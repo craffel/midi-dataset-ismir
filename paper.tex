@@ -165,19 +165,19 @@ Example CQTs computed from a 7digital preview clip and from a synthesized MIDI f
 	   (b) Normalized CQT for synthesized MIDI file.
 	   (c) Hash bitvector sequence for 7digital preview clip, with pooled beat indices and Hamming space dimension on the horizontal and vertical axes respectively.
 	   (d) Hash sequence for synthesized MIDI.
-	   (e) Similarity matrix and DTW path (displayed as a white dotted line) for CQTs.
-	   (f) Similarity matrix and DTW path for hash sequences.}
+	   (e) Distance matrix and DTW path (displayed as a white dotted line) for CQTs.
+	   (f) Distance matrix and DTW path for hash sequences.}
   \label{fig:simdtw}
 \end{figure*}
 
-We then use dynamic time warping to find the lowest-cost path through a full pairwise cosine similarity matrix $S \in \mathbb{R}^{N \times M}$ of the MIDI and audio CQTs.
+We then use dynamic time warping to find the lowest-cost path through a full pairwise cosine distance matrix $S \in \mathbb{R}^{N \times M}$ of the MIDI and audio CQTs.
 This path can be represented as two sequences $p, q \in \mathbb{R}^L$ of indices from each sequence such that $p[i] = n, q[i] = m$ implies that the $n$th MIDI beat should be aligned to the $m$th audio beat.
 Traditional DTW requires that this path includes the start and end of each sequence, or equivalently that $p[1] = q[1] = 1; p[L] = N; q[L] = M$.
 This approach is not valid when one sequence may be a subsequence of the other, which is often true in our problem setting due to the fact that, for example, the MSD 7digital audio recordings are cropped preview song clips.
 We therefore modify this constraint so that either $gN \le p[L] \le N$ or $gM \le q[L] \le M$ where $g \approx 1$ is a parameter which provides a small amount of additional tolerance.
 We also include the typical modification of applying an additive penalty $\phi$ for ``non-diagonal moves'', i.e. path entries where either $p[i] = p[i + 1]$ or $q[i] = q[i + 1]$.
 For synthesized MIDI-to-audio alignment, we used $g = .95$ and set $\phi$ to the 90th percentile of $S$.
-The cosine similarity matrix and the lowest-cost DTW path for the CQTs shown in Figure \ref{fig:simdtw}(a) and \ref{fig:simdtw}(b) can be seen in Figure \ref{fig:simdtw}(e).
+The cosine distance matrix and the lowest-cost DTW path for the CQTs shown in Figure \ref{fig:simdtw}(a) and \ref{fig:simdtw}(b) can be seen in Figure \ref{fig:simdtw}(e).
 
 \subsection{DTW cost as confidence score}
 
@@ -221,26 +221,26 @@ Due to duplication within and across datasets, care was taken to split based on 
 It would be straightforward to use our alignment scheme to match MIDI files with no metadata to entries in a dataset of song recordings.
 The size of our entire MIDI dataset (140,910 files) suggests that we should use as large of an audio corpus as possible in hopes that an audio recording of the song corresponding to each MIDI file appears in the corpus.
 Towards that end, we will be matching against the Million Song Dataset, the largest standard corpus of popular music recordings.
-This necessitates about one million similarity matrix and DTW cost calculations for each MIDI file.
+This necessitates about one million distance matrix and DTW cost calculations for each MIDI file.
 Given the size of our MIDI dataset, if a single MIDI-file-to-audio-dataset matching takes more than a few seconds, matching our entire MIDI dataset would be infeasible.
-This means that both computing the similarity matrix and calculating the DTW cost for each MIDI/audio pair must take at most tens of microseconds.
+This means that both computing the distance matrix and calculating the DTW cost for each MIDI/audio pair must take at most tens of microseconds.
 
 Unfortunately, the method described above does not meet this need.
 The median number of beats in the 7digital preview clips from the MSD and the MIDI files are 186 and 1218 respectively.
-Computing a cosine similarity matrix of this size (with a feature dimensionality of 48) using the highly optimized C++ code from \texttt{scipy} \cite{jones2014scipy} takes on average 9.82 milliseconds on a Intel Core i7-4930k processor.
+Computing a cosine distance matrix of this size (with a feature dimensionality of 48) using the highly optimized C++ code from \texttt{scipy} \cite{jones2014scipy} takes on average 9.82 milliseconds on a Intel Core i7-4930k processor.
 When implemented using the LLVM just-in-time compiler Python module \texttt{numba},\footnote{\texttt{http://numba.pydata.org/}} the DTW cost calculation described above takes on average 892 microseconds on the same processor.
 It follows that matching a \textit{single} MIDI file to the MSD using this approach would take just under three hours.
 Clearly, a more efficient approach is necessary.
 
-Calculating the similarity matrix and the DTW cost are both $\mathcal{O}(NM)$ in complexity.
-The fact that computing the similarity matrix takes about 10 times longer is then likely due to the fact that computing each entry in the similarity matrix involves $D$ each of multiply and addition operations.
+Calculating the distance matrix and the DTW cost are both $\mathcal{O}(NM)$ in complexity.
+The fact that computing the distance matrix takes about 10 times longer is then likely due to the fact that computing each entry in the distance matrix involves $D$ each of multiply and addition operations.
 It follows that calculating the distance between feature vectors is a bottleneck in our system.
-In addition, any reduction in the number of feature vectors (beats) in each sequence will give quadratic speed gains for both DTW and similarity matrix calculations.
+In addition, any reduction in the number of feature vectors (beats) in each sequence will give quadratic speed gains for both DTW and distance matrix calculations.
 
 Motivated by these issues, we propose a system which learns a common representation for the audio and MIDI CQTs in a Hamming space.
 By replacing constant-Q spectra with bitvectors, we replace the expensive distance computation with an exclusive-or operation followed by simple table lookup.
 This is thanks to the fact that computing the exclusive-or of two bitvectors $a$ and $b$ will yield a bitvector with $1$s in the dimensions where $a$ and $b$ differ and $0$s elsewhere, and that the number of $1$s in all bitvectors of length $D$ can be precomputed and stored in a table of size $2^D$.
-In the course of computing our Hamming space representation, we also implicitly downsample the sequences over time, which provides speedups for both similarity matrix and DTW calculation.
+In the course of computing our Hamming space representation, we also implicitly downsample the sequences over time, which provides speedups for both distance matrix and DTW calculation.
 Our approach has the additional potential benefit of learning a representation for comparing audio and MIDI constant-Q spectra, rather than simply using the cosine distance.
 
 \subsection{Hashing with convolutional networks}
@@ -327,8 +327,8 @@ Finally, we found that it did not help to normalize by the average distance valu
 
 Bitvector sequences for the CQTs shown in Figure \ref{fig:simdtw}(a) and \ref{fig:simdtw}(b) can be seen in \ref{fig:simdtw}(c) and \ref{fig:simdtw}(d) respectively.
 Note that because our networks contain two pooling layers, each of which downsamples by 2 in the time dimension, the number of bitvectors is $\frac{1}{4}$ of the number of constant-Q spectra for each sequence.
-The Hamming distance similarity matrix and lowest-cost DTW path for the hash sequences can be seen in Figure \ref{fig:simdtw}(f). 
-For this example, it exhibits the same structure as the CQT-based cosine similarity matrix shown in \ref{fig:simdtw}(e), and the same DTW path was recovered successfully.
+The Hamming distance matrix and lowest-cost DTW path for the hash sequences can be seen in Figure \ref{fig:simdtw}(f). 
+For this example, it exhibits the same structure as the CQT-based cosine distance matrix shown in \ref{fig:simdtw}(e), and the same DTW path was recovered successfully.
 
 To evaluate our system, note that we know ahead of time which MSD entry each MIDI should match to based on the metadata-based matching and CQT-based DTW score we precomputed.
 A useful metric for is therefore to rank MSD entries according to their hash sequence DTW distance to a given MIDI file.
@@ -359,8 +359,8 @@ So, in a relatively small proportion of cases, the MIDI hash sequence ended up b
 Because our system does not uniformly assign the lowest DTW score to the correct MSD entry for our MIDI files, it is more realistic to look at our system as a pruning technique; that is, it can be used to discard MSD entries which we can be reasonably confident are not the correct match for a given MIDI file.
 For example, if we use our system to compute the hash-based DTW score between a MIDI file and every entry in the MSD, we can discard all but 1\% of the MSD and only risk discarding the correct match about 4.1\% of the time.
 Pruning methods are only valuable when they are substantially faster than performing the original computation; fortunately, our approach is orders of magnitude faster:
-For the median hash sequence lengths, calculating a Hamming distance similarity matrix between hash sequences is about 400 times faster than computing the CQT cosine similarity matrix (24.8 microseconds vs. 9.82 milliseconds) and computing the DTW score is about 9 times faster (892 microseconds vs. 106 microseconds).
-These speedups can be attributed to the fact that computing a table lookup is much more efficient than computing the cosine similarity between two vectors and that, thanks to downsampling, our hash-based similarity matrices have $\frac{1}{16}$ of the entries of the CQT-based ones.
+For the median hash sequence lengths, calculating a Hamming distance matrix between hash sequences is about 400 times faster than computing the CQT cosine distance matrix (24.8 microseconds vs. 9.82 milliseconds) and computing the DTW score is about 9 times faster (892 microseconds vs. 106 microseconds).
+These speedups can be attributed to the fact that computing a table lookup is much more efficient than computing the cosine distance between two vectors and that, thanks to downsampling, our hash-based distance matrices have $\frac{1}{16}$ of the entries of the CQT-based ones.
 In summary, a straightforward way to describe the success of our system is to observe that we can, with high confidence, discard all but 1\% of the entries of the MSD by performing a calculation that takes about as much time as matching against 1\% of the MSD.
 
 \section{Future work}

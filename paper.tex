@@ -336,13 +336,13 @@ In summary, a straightforward way to describe the success of our system is to ob
 
 \section{Future work}
 
-Many pruning techniques have been proposed for the general case of large-scale DTW search; an overview can be found in \cite{rakthanmanon2012searching}.
-Applying these approaches to our current system would allow for further speed improvements.
+Despite our system's efficiency, we estimate that performing a full match of our 140,910 MIDI file collection against the MSD would still take a few weeks, assuming we are parallelizing the process on the 12-thread Intel i7-4930k.
+There is therefore room for improving the efficiency of our technique.
+One possibility would be to utilize some of the many pruning techniques which have been proposed for the general case of large-scale DTW search; an overview can be found in \cite{rakthanmanon2012searching}.
 Unfortunately, most of these techniques rely on the assumption that the query sequence is of the same length as all of the sequences in the database, so they would need to be modified before applying them to our problem.
 In terms of accuracy, as noted above most of our hash-match failures can be attributed to erroneous beat tracking.
 With a better beat tracking system or with added robustness to this kind of error, we could improve the pruning ability of our approach.
-Even without these improvements, our system can, in a reasonable amount of time, tackle the problem  of resolving our huge MIDI collection against the MSD.
-% So did we do it?  Exactly how long will it take?
+Even without these improvements, our proposed system will successfully provide orders of magnitude of speedup for our problem of resolving our huge MIDI collection against the MSD.
 
 \bibliography{refs}
 

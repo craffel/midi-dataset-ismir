@@ -35,13 +35,15 @@ Central to the task of content-based Music Information Retrieval is the curation
 The quantity and quality of this ground-truth is often instrumental in the success of MIR systems which utilize it as training data.
 Creating appropriate labels for a recording of a given song by hand typically requires person-hours on the order of the duration of the data, and so training data availability is a frequent bottleneck in content-based MIR tasks.
 
-MIDI files that are time-aligned to matching audio can provide ground-truth information  \cite{ewert2012towards, turetsky2003ground}.
+MIDI files that are time-aligned to matching audio can provide ground-truth information  \cite{ewert2012towards, turetsky2003ground} and can be utilized in score-informed source separation systems \cite{ewert2014score}.
 A MIDI file can serve as a timed sequence of note annotations (a `piano roll').
 It is much easier to estimate information such as beat locations, chord labels, or predominant melody from these representations than from an audio signal.
 A number of tools have been developed for inferring this kind of information from MIDI files \cite{eerola2004mir,mckay2006jsymbolic,cuthbert2010music21,raffel2014pretty_midi}.
 
+
 Halevy et al. \cite{halevy2009unreasonable} argue that some of the biggest successes in machine learning came about because ``...a large training set of the input-output behavior that we seek to automate is available to us in the wild.''
-The motivation behind this project is that MIDI files fit this description.  Through a large-scale web scrape, we obtained 140,910 unique MIDI files -- orders of magnitude larger than any available dataset of aligned transcriptions.
+The motivation behind this project is that MIDI files fit this description.
+Through a large-scale web scrape, we obtained 455,333 MIDI files, 140,910 of which were unique -- orders of magnitude larger than any available dataset of aligned transcriptions.
 This proliferation of data is likely the result of two factors: First is the wild popularity of karaoke, combined with the widespread use of MIDI files to distribute karaoke tracks, and second is that transcribing popular music as MIDI files is a common pastime for hobbyist musicians.
 
 %\subsection{Wrangling MIDI files}
@@ -90,8 +92,8 @@ Figure \ref{fig:midi-names} shows a random sampling of directory and filenames f
 Since the goal of matching MIDI and audio files is to find pairs that have \textit{content} in common, we can in principle identify matches regardless of metadata availability or accuracy.
 However, comparing content is more complicated and more expensive than a fuzzy text match.
 Since $NM$ comparisons are required to match a MIDI dataset of size $N$ to an audio file dataset of size $M$, matching large collections is practical only when the individual comparisons can be made very fast.
-Thus, the key aspect of our work is a {\em highly-efficient} scheme to match the content of MIDI and files. 
-Our system learns a cross-modality hashing which converts both MIDI and audio content vectors to a common Hamming space in which the ``local match'' operation at the core of dynamic time warping (DTW) reduces to a very fast table lookup.
+Thus, the key aspect of our work is a {\em highly-efficient} scheme to match the content of MIDI and audio files.
+Our system learns a cross-modality hashing which converts both MIDI and audio content vectors to a common Hamming (binary) space in which the ``local match'' operation at the core of dynamic time warping (DTW) reduces to a very fast table lookup.
 As described below, this allows us to match a single MIDI file to a huge collection of audio files in minutes rather than hours.
 
 The idea of using DTW distance to match MIDI files to audio recordings is not new.
@@ -166,15 +168,16 @@ We then use DTW to find the lowest-cost path through a full pairwise cosine dist
 This path can be represented as two sequences $p, q \in \mathbb{R}^L$ of indices from each sequence such that $p[i] = n, q[i] = m$ implies that the $n$th MIDI beat should be aligned to the $m$th audio beat.
 Traditional DTW constrains this path to include the start and end of each sequence, i.e. $p[1] = q[1] = 1$ and $p[L] = N; q[L] = M$.
 However, the MSD audio consists of cropped preview clips from 7digital, while MIDI files are generally transcriptions of the entire song.
-We therefore modify this constraint so that either $gN \le p[L] \le N$ or $gM \le q[L] \le M$; $g \approx 1$ is a parameter which provides a small amount of additional tolerance.
-We employ an additive penalty $\phi$ for ``non-diagonal moves'', i.e. path entries where either $p[i] = p[i + 1]$ or $q[i] = q[i + 1]$.
-For synthesized MIDI-to-audio alignment, we used $g = .95$ and set $\phi$ to the 90th percentile of $S$.
+We therefore modify this constraint so that either $gN \le p[L] \le N$ or $gM \le q[L] \le M$; $g$ is a parameter which provides a small amount of additional tolerance and is normally close to $1$.
+We employ an additive penalty $\phi$ for ``non-diagonal moves'' (i.e. path entries where either $p[i] = p[i + 1]$ or $q[i] = q[i + 1]$) which, in our setting, is set to approximate a typical distance value in $S$.
+The combined use of $g$ and $\phi$ typically results in paths where both $p[1]$ and $q[1]$ are close to $1$, so no further path constraints are needed.
+For synthesized MIDI-to-audio alignment, we used $g = .95$ and set $\phi$ to the 90th percentile of all of the values in $S$.
 The cosine distance matrix and the lowest-cost DTW path for the CQTs shown in Figure \ref{fig:simdtw}(a) and \ref{fig:simdtw}(b) can be seen in Figure \ref{fig:simdtw}(e).
 
 \subsection{DTW cost as confidence score}
 \label{sec:score}
 
-If we exclude the non-diagonal penalties, the cost of a DTW path $p, q$ through $S$ is calculated by the sum of the distances between the aligned entries of each sequence:
+The cost of a DTW path $p, q$ through $S$ is calculated by the sum of the distances between the aligned entries of each sequence:
 $$
 c = \sum_{i = 1}^L S[p[i], q[i]] + T(p[i] - p[i-1], q[i] - q[i-1])
 $$
@@ -205,7 +208,8 @@ Care was taken to split based on \textit{songs}, rather than by entry (since som
 
 We now arrive at the central part of our work, the scheme for hashing both audio and MIDI data to a  common simple representation to allow very fast computation of the distance matrix $S$ needed for DTW alignment.
 In principle, given the confidence score of the previous section, to find audio content that matches a given MIDI, all we need to do is perform alignment against every possible candidate audio file and choose the audio file with the lowest score.
-To maximize the chances of finding a match, we need to use a large and comprehensive pool of audio files; we use the 994,960 7digital preview clips corresponding to the Million Song Dataset, the largest standard research corpus of popular music recordings \cite{schindler2012facilitating}.
+To maximize the chances of finding a match, we need to use a large and comprehensive pool of audio files.
+We use the 994,960 7digital preview clips corresponding to the Million Song Dataset, which comprise of (typically) 30 second portions of recordings from the largest standard research corpus of popular music \cite{schindler2012facilitating}.
 A complete search for matches could thus involve 994,960 alignments for each of our 140,910 MIDI files.
 
 The CQT-to-CQT approach of section \ref{sec:alignment} cannot achieve this.
@@ -228,13 +232,12 @@ Our approach has the additional potential benefit of {\em learning} the most eff
 
 Our hashing model is based on the Siamese network architecture proposed in \cite{masci2014multimodal}.
 Given feature vectors $\{x\}$ and $\{y\}$ from two modalities, and a set of pairs $\mathcal{P}$ such that $(x, y) \in \mathcal{P}$ indicates that $x$ and $y$ are considered ``similar'', and a second set $\mathcal{N}$ consisting of ``dissimilar'' pairs, a nonlinear mapping is learned from each modality to a common Hamming space such that similar and dissimilar feature vectors are respectively mapped to bitvectors with small and large Hamming distances.
-One objective function for this technique is:
+A straightforward objective function which can be minimized to find an appropriate mapping is
 \begin{align*}
 \mathcal{L} &= \frac{1}{|\mathcal{P}|} \sum_{(x, y) \in \mathcal{P}} \| f(x) - g(y) \|_2^2\\
 & - \frac{\alpha}{|\mathcal{N}|} \sum_{(x, y) \in \mathcal{N}} \max(0, m - \|f(x) - g(y) \|_2)^2
 \end{align*}
-where $f$ and $g$ are the nonlinear mappings for each modality, $\alpha$ is a parameter 
-to emphasize separating dissimilar items, and $m$ is a target separation of dissimilar pairs.
+where $f$ and $g$ are the nonlinear mappings for each modality, $\alpha$ is a parameter to emphasize separating dissimilar items, and $m$ is a target separation of dissimilar pairs.
 
 The task is them to optimize the nonlinear mappings $f$ and $g$ with respect to $\mathcal{L}$. 
 In \cite{masci2014multimodal} the mappings are implemented as multi-layer nonlinear networks.
@@ -344,6 +347,7 @@ One possibility would be to utilize some of the many pruning techniques which ha
 Unfortunately, most of these techniques rely on the assumption that the query sequence is of the same length as all of the sequences in the database, so they would need to be modified before applying them to our problem.
 In terms of accuracy, as noted above most of our hash-match failures can be attributed to erroneous beat tracking.
 With a better beat tracking system or with added robustness to this kind of error, we could improve the pruning ability of our approach.
+We could also compare the accuracy of our system to a slower approach on a much smaller task to help pinpoint failure modes.
 Even without these improvements, our proposed system will successfully provide orders of magnitude of speedup for our problem of resolving our huge MIDI collection against the MSD.
 All of the code used in this project is available online.\footnote{\texttt{http://github.com/redacted}}
 

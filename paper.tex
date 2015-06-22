@@ -39,13 +39,12 @@ A number of tools have been developed for inferring this kind of information fro
 Halevy et al. \cite{halevy2009unreasonable} argue that some of the biggest successes in machine learning came about because ``...a large training set of the input-output behavior that we seek to automate is available to us in the wild.''
 The motivation behind this project is that MIDI files fit this description.
 Through a large-scale web scrape, we obtained 455,333 MIDI files, 140,910 of which were unique -- orders of magnitude larger than any available dataset of aligned transcriptions.
-This proliferation of data is likely the result of two factors: First is the wild popularity of karaoke, combined with the widespread use of MIDI files to distribute karaoke tracks, and second is that transcribing popular music as MIDI files is a common pastime for hobbyist musicians.
+This proliferation of data is likely due to the fact that MIDI files are typically a few kilobytes in size and were therefore a popular format for distributing and storing music when hard drives had only megabytes of storage.
 
 %\subsection{Wrangling MIDI files}
 
 The mere existence of a large collection of MIDI data is not enough:  In order to use MIDI files as ground truth, they need to be both matched (paired with a corresponding audio recording) and aligned (adjusted so that the timing of the events in the file match the audio).
 Alignment has been studied extensively  \cite{ewert2012towards, turetsky2003ground}, but prior work typically assumes that the MIDI and audio have been correctly matched.
-
 Given large corpora of audio and MIDI files, the task of matching entries of each type may seem to be a simple matter of fuzzy text matching of the files' metadata.
 However, MIDI files almost never contain structured metadata, and as a result the best-case scenario is that the artist and song title are included in the file or directory name.
 While we found some examples of this in our collection of scraped MIDI files, the vast majority of the files had effectively no metadata information.
@@ -121,7 +120,7 @@ Even at the scale of this reduced set of training data, manual alignment verific
 \subsection{Metadata matching}
 
 We first extracted the song title and artist from each entry in the clean MIDI subset based on file and directory name.
-The resulting metadata needs additional canonicalization; for example, ``The Beatles'' appear as an artist along with ``Beatles, The'', ``Beatles'', and ``The Beatles John Paul Ringo George''.
+The resulting metadata needs additional canonicalization; for example, ``The Beatles'' ``Beatles, The'', ``Beatles'', and ``The Beatles John Paul Ringo George'' all appear as artists.
 To normalize these issues, we applied some manual text processing and resolved the artists and song titles against the Freebase \cite{bollacker2008freebase} and Echo Nest\footnote{\texttt{http://developer.echonest.com/docs/v4}} databases.
 This resulted in 17,243 MIDI files for 10,060 unique songs.
 
@@ -215,8 +214,7 @@ Matching a \textit{single} MIDI file to the MSD using this approach would thus t
 Clearly, a more efficient approach is necessary.
 
 Calculating the distance matrix and the DTW cost are both $\mathcal{O}(NM)$ in complexity; the distance matrix calculation is about 10 times slower presumably because it involves $D$ multiply-accumulate operations to compute the inner product for each point.
-We see that calculating the distance between feature vectors is the bottleneck in our system.
-Moreover, any reduction in the number of feature vectors (i.e., beats) in each sequence will give quadratic speed gains for both DTW and distance matrix calculations.
+Calculating the distance between feature vectors is therefore the bottleneck in our system, so any reduction in the number of feature vectors (i.e., beats) in each sequence will give quadratic speed gains for both DTW and distance matrix calculations.
 
 Motivated by these issues, we propose a system which learns a common, reduced representation for the audio and MIDI features in a Hamming space.
 By replacing constant-Q spectra with bitvectors, we replace the expensive inner product computation by an exclusive-or operation followed by simple table lookup: The exclusive-or of two bitvectors $a$ and $b$ will yield a bitvector consisting of $1$s where $a$ and $b$ differ and $0$s elsewhere, and the number of $1$s in all bitvectors of length $D$ can be precomputed and stored in a table of size $2^D$.  
@@ -237,7 +235,6 @@ where $f$ and $g$ are the nonlinear mappings for each modality, $\alpha$ is a pa
 The task is them to optimize the nonlinear mappings $f$ and $g$ with respect to $\mathcal{L}$. 
 In \cite{masci2014multimodal} the mappings are implemented as multi-layer nonlinear networks.
 In the present work, we will use convolutional networks due to their ability to exploit invariances in the input feature representation; CQTs contain invariances in both the time and frequency axes, so convolutional networks are particularly well-suited for our task.
-
 Our two feature modalities are CQTs from synthesized MIDI files and audio files.
 We assemble the set of ``similar'' cross-modality pairs $\mathcal{P}$ by taking the CQT frames from individual aligned beats in our training set.
 The choice of $\mathcal{N}$ is less obvious, but randomly choosing CQT spectra from non-aligned beats in our collection achieved satisfactory results.
@@ -257,8 +254,7 @@ If the validation loss was less than $99\%$ of the previous lowest, we trained f
 
 While the validation loss is a reasonable indicator of network performance, its scale will vary depending on the $\alpha$ and $m$ regularization hyperparameters.
 To obtain a more consistent metric, we also computed the distribution of distances between the hash vectors produced by the network for the pairs in $\mathcal{P}$ and those in $\mathcal{N}$.
-The separation of these distributions is a direct measure of network performance. 
-We used Bhattacharyya distance for this performance metric \cite{bhattacharyya1943measure}.
+To directly measure network performance, we used the Bhattacharya distance \cite{bhattacharyya1943measure} to compute the separation of these distributions.
 
 In each modality, the hashing networks have the same architecture: A series of alternating convolutional and pooling layers followed by a series of fully-connected layers.
 All layers except the last use rectifier nonlinearities; as in \cite{masci2014multimodal}, the output layer uses a hyperbolic tangent.
@@ -338,7 +334,7 @@ In summary, a straightforward way to describe the success of our system is to ob
 
 Despite our system's efficiency, we estimate that performing a full match of our 140,910 MIDI file collection against the MSD would still take a few weeks, assuming we are parallelizing the process on the 12-thread Intel i7-4930k.
 There is therefore room for improving the efficiency of our technique.
-One possibility would be to utilize some of the many pruning techniques which have been proposed for the general case of large-scale DTW search; an overview can be found in \cite{rakthanmanon2012searching}.
+One possibility would be to utilize some of the many pruning techniques which have been proposed for the general case of large-scale DTW search.
 Unfortunately, most of these techniques rely on the assumption that the query sequence is of the same length as all of the sequences in the database, so they would need to be modified before applying them to our problem.
 In terms of accuracy, as noted above most of our hash-match failures can be attributed to erroneous beat tracking.
 With a better beat tracking system or with added robustness to this kind of error, we could improve the pruning ability of our approach.

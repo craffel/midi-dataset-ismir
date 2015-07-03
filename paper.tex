@@ -335,7 +335,7 @@ In summary, a straightforward way to describe the success of our system is to ob
 Despite our system's efficiency, we estimate that performing a full match of our 140,910 MIDI file collection against the MSD would still take a few weeks, assuming we are parallelizing the process on the 12-thread Intel i7-4930k.
 There is therefore room for improving the efficiency of our technique.
 One possibility would be to utilize some of the many pruning techniques which have been proposed for the general case of large-scale DTW search.
-Unfortunately, most of these techniques rely on the assumption that the query sequence is of the same length as all the sequences in the database, so they would need to be modified before applying them to our problem.
+Unfortunately, most of these techniques rely on the assumption that the query sequence is of the same length or shorter than all the sequences in the database, so they would need to be modified before being applied to our problem.
 In terms of accuracy, as noted above most of our hash-match failures can be attributed to erroneous beat tracking.
 With a better beat tracking system or with added robustness to this kind of error, we could improve the pruning ability of our approach.
 We could also compare the accuracy of our system to a slower approach on a much smaller task to help pinpoint failure modes.

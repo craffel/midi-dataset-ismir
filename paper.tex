@@ -165,7 +165,7 @@ However, the MSD audio consists of cropped preview clips from 7digital, while MI
 We therefore modify this constraint so that either $gN \le p[L] \le N$ or $gM \le q[L] \le M$; $g$ is a parameter which provides a small amount of additional tolerance and is normally close to $1$.
 We employ an additive penalty $\phi$ for ``non-diagonal moves'' (i.e. path entries where either $p[i] = p[i + 1]$ or $q[i] = q[i + 1]$) which, in our setting, is set to approximate a typical distance value in $S$.
 The combined use of $g$ and $\phi$ typically results in paths where both $p[1]$ and $q[1]$ are close to $1$, so no further path constraints are needed.
-For synthesized MIDI-to-audio alignment, we used $g = .95$ and set $\phi$ to the 90th percentile of all of the values in $S$.
+For synthesized MIDI-to-audio alignment, we used $g = .95$ and set $\phi$ to the 90th percentile of all the values in $S$.
 The cosine distance matrix and the lowest-cost DTW path for the CQTs shown in Figure \ref{fig:simdtw}(a) and \ref{fig:simdtw}(b) can be seen in Figure \ref{fig:simdtw}(e).
 
 \subsection{DTW cost as confidence score}
@@ -203,12 +203,12 @@ Care was taken to split based on \textit{songs}, rather than by entry (since som
 We now arrive at the central part of our work, the scheme for hashing both audio and MIDI data to a  common simple representation to allow very fast computation of the distance matrix $S$ needed for DTW alignment.
 In principle, given the confidence score of the previous section, to find audio content that matches a given MIDI, all we need to do is perform alignment against every possible candidate audio file and choose the audio file with the lowest score.
 To maximize the chances of finding a match, we need to use a large and comprehensive pool of audio files.
-We use the 994,960 7digital preview clips corresponding to the Million Song Dataset, which comprise of (typically) 30 second portions of recordings from the largest standard research corpus of popular music \cite{schindler2012facilitating}.
+We use the 994,960 7digital preview clips corresponding to the Million Song Dataset, which consist of (typically) 30 second portions of recordings from the largest standard research corpus of popular music \cite{schindler2012facilitating}.
 A complete search for matches could thus involve 994,960 alignments for each of our 140,910 MIDI files.
 
 The CQT-to-CQT approach of section \ref{sec:alignment} cannot achieve this.
 The median number of beats in our MIDI files is 1218, and for the 7digital preview clips it is 186.
-Computing the cosine distance matrix $S$ of this size (for $D=48$ dimension CQT features) using the highly optimized C++ code from \texttt{scipy} \cite{jones2014scipy} takes on average 9.82 milliseconds on a Intel Core i7-4930k processor.
+Computing the cosine distance matrix $S$ of this size (for $D=48$ dimension CQT features) using the highly optimized C++ code from \texttt{scipy} \cite{jones2014scipy} takes on average 9.82 milliseconds on an Intel Core i7-4930k processor.
 When implemented using the LLVM just-in-time compiler Python module \texttt{numba},\footnote{\texttt{http://numba.pydata.org/}} the DTW cost calculation described above takes on average 892 microseconds on the same processor.
 Matching a \textit{single} MIDI file to the MSD using this approach would thus take just under three hours; matching our entire 140,910 MIDI file collection to the MSD would take years.
 Clearly, a more efficient approach is necessary.
@@ -268,8 +268,8 @@ Our model was implemented using \texttt{theano} \cite{bastien2012theano} and \te
 
 To ensure good performance, we optimized all model hyperparameters using Whetlab,\footnote{\texttt{http://www.whetlab.com}} a web API which implements black-box Bayesian optimization \cite{snoek2012practical}.
 We used Whetlab to optimize the number of convolutional/pooling layers, the number and size of the fully-connected layers, the RMSProp learning rate and decay parameters, and the $\alpha$ and $m$ regularization parameters of $\mathcal{L}$.
-As a hyperparameter optimization objective, we used the Bhattacharyya distance described above.
-The best performing network found by Whetlab had 2 convolutional layers, 2 ``hidden'' fully-connected layers of with 2048 units in addition to a fully-connected output layer, a learning rate of .001 with a decay parameter of .65, $\alpha = .5$, and $m = 4$.
+As a hyperparameter optimization objective, we used the Bhattacharyya distance as described above.
+The best performing network found by Whetlab had 2 convolutional layers, 2 ``hidden'' fully-connected layers with 2048 units in addition to a fully-connected output layer, a learning rate of .001 with a decay parameter of .65, $\alpha = .5$, and $m = 4$.
 This hyperparameter configuration yielded the output hash distance distributions for $\mathcal{P}$ and $\mathcal{N}$ shown in Figure \ref{fig:distances}, for a Bhattacharyya separation of $0.488$.
 
 \begin{figure}
@@ -295,7 +295,7 @@ Finally, we found normalizing by the average distance value $\mathcal{B}$ did no
 
 Bitvector sequences for the CQTs shown in Figure \ref{fig:simdtw}(a) and \ref{fig:simdtw}(b) can be seen in \ref{fig:simdtw}(c) and \ref{fig:simdtw}(d) respectively.
 Note that because our networks contain two downsample-by-2 pooling layers, the number of bitvectors is $\frac{1}{4}$ of the number of constant-Q spectra for each sequence.
-The Hamming distance distance matrix and lowest-cost DTW path for the hash sequences are shown in Figure \ref{fig:simdtw}(f). 
+The Hamming distance matrix and lowest-cost DTW path for the hash sequences are shown in Figure \ref{fig:simdtw}(f).
 In this example, we see the same structure as in the CQT-based cosine distance matrix of  \ref{fig:simdtw}(e), and the same DTW path was successfully obtained.
 
 To evaluate our system using the known MIDI-audio pairs of our evaluation set, we rank MSD entries according to their hash sequence DTW distance to a given MIDI file, and determine the rank of the correct match for each MIDI file.
@@ -318,9 +318,9 @@ Some intuition about the system performance is given by reporting the percentage
 Studying Table \ref{tab:rank-percentages} reveals that we can't rely on the correct entry appearing as the top match among all the MSD tracks; the DTW distance for true matches only appears at rank 1 about 15.2\% of time.
 Furthermore, for a significant portion of our MIDI files, the correct match did not rank in the top 1000.
 This was usually caused by the MIDI file being beat tracked at a different tempo than the audio file, which inflated the DTW score.
-For some of the MIDI files where the true match ranked highly but not on top, the top rank consisted of a different version (cover, remix, etc.) of the correct entry.
+For MIDI files where the true match ranked highly but not first, the top rank was often a different version (cover, remix, etc.) of the correct entry.
 Finally, some degree of inaccuracy can be attributed to the fact that our hashing model is not perfect (as shown in Figure \ref{fig:distances}) and that the MSD is very large, containing many possible decoys. 
-In a relatively small proportion of cases, the MIDI hash sequence ended up being very similar to a large number of MSD hash sequences, pushing down the rank of the correct entry.
+In a relatively small proportion of cases, the MIDI hash sequence ended up being very similar to many MSD hash sequences, pushing down the rank of the correct entry.
 
 Given that we cannot reliably assume the top hit from hashing is the correct MSD entry, it is more realistic to look at our system as a pruning technique; that is, it can be used to discard MSD entries which we can be reasonably confident do not match a given MIDI file.
 For example, Table \ref{tab:rank-percentages} tells us that we can use our system to compute the hash-based DTW score between a MIDI file and every entry in the MSD, then discard all but 1\% of the MSD and only risk discarding the correct match about 4.1\% of the time.
@@ -335,12 +335,12 @@ In summary, a straightforward way to describe the success of our system is to ob
 Despite our system's efficiency, we estimate that performing a full match of our 140,910 MIDI file collection against the MSD would still take a few weeks, assuming we are parallelizing the process on the 12-thread Intel i7-4930k.
 There is therefore room for improving the efficiency of our technique.
 One possibility would be to utilize some of the many pruning techniques which have been proposed for the general case of large-scale DTW search.
-Unfortunately, most of these techniques rely on the assumption that the query sequence is of the same length as all of the sequences in the database, so they would need to be modified before applying them to our problem.
+Unfortunately, most of these techniques rely on the assumption that the query sequence is of the same length as all the sequences in the database, so they would need to be modified before applying them to our problem.
 In terms of accuracy, as noted above most of our hash-match failures can be attributed to erroneous beat tracking.
 With a better beat tracking system or with added robustness to this kind of error, we could improve the pruning ability of our approach.
 We could also compare the accuracy of our system to a slower approach on a much smaller task to help pinpoint failure modes.
 Even without these improvements, our proposed system will successfully provide orders of magnitude of speedup for our problem of resolving our huge MIDI collection against the MSD.
-All of the code used in this project is available online.\footnote{\texttt{http://github.com/craffel/midi-dataset}}
+All the code used in this project is available online.\footnote{\texttt{http://github.com/craffel/midi-dataset}}
 
 \section{Acknowledgements}
 

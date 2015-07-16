@@ -264,7 +264,7 @@ All pooling layers performed max-pooling, with a pooling size of 2$\times$2.
 Finally, as suggested in \cite{he2015delving}, we initialized all weights with normally-distributed random variables with mean of zero and a standard deviation of $\sqrt{2/n_{in}}$, where $n_{in}$ is the number of inputs to each layer.
 Our model was implemented using \texttt{theano} \cite{bastien2012theano} and \texttt{lasagne}.\footnote{\texttt{https://github.com/Lasagne/Lasagne}}
 
-To ensure good performance, we optimized all model hyperparameters using Whetlab,\footnote{\texttt{http://www.whetlab.com}} a web API which implements black-box Bayesian optimization \cite{snoek2012practical}.
+To ensure good performance, we optimized all model hyperparameters using Whetlab,\footnote{Between submission and acceptance of this paper, Whetlab announced it would be ending its service.  For posterity, the results of our hyperparameter search are available at \texttt{http://bit.ly/hash-param-search}.} a web API which implements black-box Bayesian optimization \cite{snoek2012practical}.
 We used Whetlab to optimize the number of convolutional/pooling layers, the number and size of the fully-connected layers, the RMSProp learning rate and decay parameters, and the $\alpha$ and $m$ regularization parameters of $\mathcal{L}$.
 As a hyperparameter optimization objective, we used the Bhattacharyya distance as described above.
 The best performing network found by Whetlab had 2 convolutional layers, 2 ``hidden'' fully-connected layers with 2048 units in addition to a fully-connected output layer, a learning rate of .001 with a decay parameter of .65, $\alpha = .5$, and $m = 4$.

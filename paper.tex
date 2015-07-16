@@ -27,12 +27,12 @@
 
 \section{Training Data for MIR}\label{sec:introduction}
 
-Central to the task of content-based Music Information Retrieval is the curation of ground-truth data for tasks of interest (e.g. timestamped chord labels for automatic chord estimation, beat positions for beat tracking, prominent melody time series for melody extraction, etc.).
+Central to the task of content-based Music Information Retrieval (MIR) is the curation of ground-truth data for tasks of interest (e.g. timestamped chord labels for automatic chord estimation, beat positions for beat tracking, prominent melody time series for melody extraction, etc.).
 The quantity and quality of this ground-truth is often instrumental in the success of MIR systems which utilize it as training data.
 Creating appropriate labels for a recording of a given song by hand typically requires person-hours on the order of the duration of the data, and so training data availability is a frequent bottleneck in content-based MIR tasks.
 
 MIDI files that are time-aligned to matching audio can provide ground-truth information  \cite{ewert2012towards, turetsky2003ground} and can be utilized in score-informed source separation systems \cite{ewert2014score, ganseman2010source}.
-A MIDI file can serve as a timed sequence of note annotations (a `piano roll').
+A MIDI file can serve as a timed sequence of note annotations (a ``piano roll'').
 It is much easier to estimate information such as beat locations, chord labels, or predominant melody from these representations than from an audio signal.
 A number of tools have been developed for inferring this kind of information from MIDI files \cite{eerola2004mir,mckay2006jsymbolic,cuthbert2010music21,raffel2014pretty_midi}.
 
@@ -40,7 +40,7 @@ A number of tools have been developed for inferring this kind of information fro
 Halevy et al. \cite{halevy2009unreasonable} argue that some of the biggest successes in machine learning came about because ``...a large training set of the input-output behavior that we seek to automate is available to us in the wild.''
 The motivation behind this project is that MIDI files fit this description.
 Through a large-scale web scrape, we obtained 455,333 MIDI files, 140,910 of which were unique -- orders of magnitude larger than any available dataset of aligned transcriptions.
-This proliferation of data is likely due to the fact that MIDI files are typically a few kilobytes in size and were therefore a popular format for distributing and storing music when hard drives had only megabytes of storage.
+This proliferation of data is likely due to the fact that MIDI files are typically a few kilobytes in size and were therefore a popular format for distributing and storing music recordings when hard drives had only megabytes of storage.
 
 %\subsection{Wrangling MIDI files}
 
@@ -139,7 +139,7 @@ Our best results came from the following system for aligning a single MIDI/audio
 First, we synthesize the MIDI data using \texttt{fluidsynth}.\footnote{\texttt{http://www.fluidsynth.org}}
 We then estimate the MIDI beat locations using the MIDI file's tempo change information and the method described in \cite{raffel2014pretty_midi}.
 To circumvent the common issue where the beat is tracked one-half beat out of phase, we double the BPM until it is at least 240.
-We compute\footnote{All operations were accomplished with \texttt{librosa} \cite{mcfee2014librosa}.} beat locations for the audio signal with the constraint that the BPM should remain close to the global MIDI tempo. 
+We compute\footnote{All audio analysis was accomplished with \texttt{librosa} \cite{mcfee2014librosa}.} beat locations for the audio signal with the constraint that the BPM should remain close to the global MIDI tempo.
 We then compute log-amplitude beat-synchronous constant-Q transforms (CQTs) of audio and synthesized MIDI data with semitone frequency spacing and a frequency range from C3 (65.4 Hz) to C7 (1046.5 Hz).
 The resulting feature matrices are then of dimensionality $N \times D$ and $M \times D$ where $N$ and $M$ are the resulting number of beats in the MIDI and audio recordings respectively and $D$ is $48$ (the number of semitones between C3 and C7).
 Example CQTs computed from a 7digital preview clip and from a synthesized MIDI file can be seen in Figure \ref{fig:simdtw}(a) and \ref{fig:simdtw}(b) respectively.
@@ -191,7 +191,7 @@ This ground-truth supported a receiver operating characteristic (ROC) for $\hat{
 A threshold of $0.78$ allowed zero false accepts on this set while only falsely discarding 15 well-aligned pairs.
 Retaining all alignments with costs better (lower) than this threshold resulted in 10,035 successful alignments.
 
-Recall that these matched and aligned pairs serve two purposes: They provide training data for our hashing model; and we also use them to evaluate the overall content-based matching system.
+Recall that these matched and aligned pairs serve two purposes: They provide training data for our hashing model; and we also use them to evaluate the entire content-based matching system.
 For a fair evaluation, we exclude items used in training from the evaluation, thus we split the successful alignments into three parts: 50\% to use as training data, $25\%$ as a ``development set'' to tune the content-based matching system, and the remaining $25\%$ to use for final evaluation of our system.
 Care was taken to split based on \textit{songs}, rather than by entry (since some songs appear multiple times).
 
@@ -199,12 +199,12 @@ Care was taken to split based on \textit{songs}, rather than by entry (since som
 \label{sec:hashing}
 
 We now arrive at the central part of our work, the scheme for hashing both audio and MIDI data to a  common simple representation to allow very fast computation of the distance matrix $S$ needed for DTW alignment.
-In principle, given the confidence score of the previous section, to find audio content that matches a given MIDI, all we need to do is perform alignment against every possible candidate audio file and choose the audio file with the lowest score.
+In principle, given the confidence score of the previous section, to find audio content that matches a given MIDI file, all we need to do is perform alignment against every possible candidate audio file and choose the audio file with the lowest score.
 To maximize the chances of finding a match, we need to use a large and comprehensive pool of audio files.
 We use the 994,960 7digital preview clips corresponding to the Million Song Dataset, which consist of (typically) 30 second portions of recordings from the largest standard research corpus of popular music \cite{schindler2012facilitating}.
 A complete search for matches could thus involve 994,960 alignments for each of our 140,910 MIDI files.
 
-The CQT-to-CQT approach of section \ref{sec:alignment} cannot achieve this.
+The CQT-to-CQT approach of section \ref{sec:alignment} cannot feasibly achieve this.
 The median number of beats in our MIDI files is 1218, and for the 7digital preview clips it is 186.
 Computing the cosine distance matrix $S$ of this size (for $D=48$ dimension CQT features) using the highly optimized C++ code from \texttt{scipy} \cite{jones2014scipy} takes on average 9.82 milliseconds on an Intel Core i7-4930k processor.
 When implemented using the LLVM just-in-time compiler Python module \texttt{numba},\footnote{\texttt{http://numba.pydata.org/}} the DTW cost calculation described above takes on average 892 microseconds on the same processor.
@@ -228,9 +228,9 @@ A straightforward objective function which can be minimized to find an appropria
 \mathcal{L} &= \frac{1}{|\mathcal{P}|} \sum_{(x, y) \in \mathcal{P}} \| f(x) - g(y) \|_2^2\\
 & - \frac{\alpha}{|\mathcal{N}|} \sum_{(x, y) \in \mathcal{N}} \max(0, m - \|f(x) - g(y) \|_2)^2
 \end{align*}
-where $f$ and $g$ are the nonlinear mappings for each modality, $\alpha$ is a parameter to emphasize separating dissimilar items, and $m$ is a target separation of dissimilar pairs.
+where $f$ and $g$ are the nonlinear mappings for each modality, $\alpha$ is a parameter to control the importance of separating dissimilar items, and $m$ is a target separation of dissimilar pairs.
 
-The task is them to optimize the nonlinear mappings $f$ and $g$ with respect to $\mathcal{L}$. 
+The task is then to optimize the nonlinear mappings $f$ and $g$ with respect to $\mathcal{L}$.
 In \cite{masci2014multimodal} the mappings are implemented as multilayer nonlinear networks.
 In the present work, we will use convolutional networks due to their ability to exploit invariances in the input feature representation; CQTs contain invariances in both the time and frequency axes, so convolutional networks are particularly well-suited for our task.
 Our two feature modalities are CQTs from synthesized MIDI files and audio files.
@@ -240,7 +240,7 @@ The choice of $\mathcal{N}$ is less obvious, but randomly choosing CQT spectra f
 \subsection{System specifics}
 
 Training the hashing model involves presenting training examples and backpropagating the gradient of $\mathcal{L}$ through the model parameters.
-We held out 10\% of the training set from Section \ref{sec:dataset} as a validation set, not used in training the networks.
+We held out 10\% of the training set described in Section \ref{sec:dataset} as a validation set, not used in training the networks.
 We z-scored the remaining 90\% across feature dimensions and re-used the means and standard deviations from this set to z-score the validation set.
 
 For efficiency, we used minibatches of training examples; each minibatch consisted of 50 sequences obtained by choosing a random offset for each training sequence pair and cropping out the next 100 beats.  
@@ -267,7 +267,7 @@ Our model was implemented using \texttt{theano} \cite{bastien2012theano} and \te
 To ensure good performance, we optimized all model hyperparameters using Whetlab,\footnote{Between submission and acceptance of this paper, Whetlab announced it would be ending its service.  For posterity, the results of our hyperparameter search are available at \texttt{http://bit.ly/hash-param-search}.} a web API which implements black-box Bayesian optimization \cite{snoek2012practical}.
 We used Whetlab to optimize the number of convolutional/pooling layers, the number and size of the fully-connected layers, the RMSProp learning rate and decay parameters, and the $\alpha$ and $m$ regularization parameters of $\mathcal{L}$.
 As a hyperparameter optimization objective, we used the Bhattacharyya distance as described above.
-The best performing network found by Whetlab had 2 convolutional layers, 2 ``hidden'' fully-connected layers with 2048 units in addition to a fully-connected output layer, a learning rate of .001 with a decay parameter of .65, $\alpha = .5$, and $m = 4$.
+The best performing network found by Whetlab had 2 convolutional layers, 2 ``hidden'' fully-connected layers with 2048 units in addition to a fully-connected output layer, a learning rate of .001 with an RMSProp decay parameter of .65, $\alpha = .5$, and $m = 4$.
 This hyperparameter configuration yielded the output hash distance distributions for $\mathcal{P}$ and $\mathcal{N}$ shown in Figure \ref{fig:distances}, for a Bhattacharyya separation of $0.488$.
 
 \begin{figure}
@@ -287,7 +287,7 @@ Then, we compute the DTW cost as described in Section \ref{sec:alignment} betwee
 We tuned the parameters of the DTW cost calculation to optimize results over our ``development'' set of successfully aligned MIDI/MSD pairs.
 We found it beneficial to use a smaller value of $g = 0.9$.
 Using a fixed value for the non-diagonal move penalty avoids the percentile calculation, so we chose $\phi = 4$.
-Finally, we found normalizing by the average distance value $\mathcal{B}$ did not help, so we skipped this step.
+Finally, we found that normalizing by the average distance value $\mathcal{B}$ did not help, so we skipped this step.
 
 \subsection{Results}
 
@@ -333,7 +333,7 @@ In summary, a straightforward way to describe the success of our system is to ob
 Despite our system's efficiency, we estimate that performing a full match of our 140,910 MIDI file collection against the MSD would still take a few weeks, assuming we are parallelizing the process on the 12-thread Intel i7-4930k.
 There is therefore room for improving the efficiency of our technique.
 One possibility would be to utilize some of the many pruning techniques which have been proposed for the general case of large-scale DTW search.
-Unfortunately, most of these techniques rely on the assumption that the query sequence is of the same length or shorter than all the sequences in the database, so they would need to be modified before being applied to our problem.
+Unfortunately, most of these techniques rely on the assumption that the query sequence is of the same length or shorter than all the sequences in the database and so would need to be modified before being applied to our problem.
 In terms of accuracy, as noted above most of our hash-match failures can be attributed to erroneous beat tracking.
 With a better beat tracking system or with added robustness to this kind of error, we could improve the pruning ability of our approach.
 We could also compare the accuracy of our system to a slower approach on a much smaller task to help pinpoint failure modes.

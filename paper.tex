@@ -95,7 +95,7 @@ The idea of using DTW distance to match MIDI files to audio recordings is not ne
 For example, in \cite{hu2003polyphonic}, MIDI-audio matching is done by finding the minimal DTW distance between all pairs of chromagrams of (synthesized) MIDI and audio files.
 Our approach differs in a few key ways: First, instead of using chromagrams (a hand-designed representation), we learn a common representation for MIDI and audio data.
 Second, our datasets are many orders of magnitude larger (hundreds of thousands vs.\ hundreds of files), which necessitates a much more efficient approach.
-Specifically, by mapping to a Hamming space we greatly speed up distance matrix calculation and we receive quadratic speed gains by implicitly downsampling the audio and MIDI feature sequences as part of our learned feature mapping.
+Specifically, by mapping to a Hamming space we greatly speed up distance matrix calculation and we receive quad\-rat\-ic speed gains by implicitly downsampling the audio and MIDI feature sequences as part of our learned feature mapping.
 
 In the following section, we detail the dataset of MIDI files we scraped from the Internet and describe how we prepared a subset for training our hasher.
 Our cross-modality hashing model is described in Section \ref{sec:hashing}.
@@ -118,7 +118,7 @@ Even at the scale of this reduced set of training data, manual alignment verific
 \subsection{Metadata matching}
 
 To obtain a collection of MIDI-audio pairs, we first separated a subset of MIDI files for which the directory name corresponded to the song's artist and the filename gave the song's title.
-The resulting metadata needed additional canonicalization; for example, ``The Beatles'' ``Beatles, The'', ``Beatles'', and ``The Beatles John Paul Ringo George'' all appeared as artists.
+The resulting metadata needed additional canonicalization; for example, ``The Beatles'', ``Beatles, The'', ``Beatles'', and ``The Beatles John Paul Ringo George'' all appeared as artists.
 To normalize these issues, we applied some manual text processing and resolved the artists and song titles against the Freebase \cite{bollacker2008freebase} and Echo Nest\footnote{\texttt{http://developer.echonest.com/docs/v4}} databases.
 This resulted in a collection of 17,243 MIDI files for 10,060 unique songs, which we will refer to as the ``clean MIDI subset''.
 

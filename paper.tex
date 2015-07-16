@@ -120,7 +120,7 @@ Even at the scale of this reduced set of training data, manual alignment verific
 To obtain a collection of MIDI-audio pairs, we first separated a subset of MIDI files for which the directory name corresponded to the song's artist and the filename gave the song's title.
 The resulting metadata needed additional canonicalization; for example, ``The Beatles'' ``Beatles, The'', ``Beatles'', and ``The Beatles John Paul Ringo George'' all appeared as artists.
 To normalize these issues, we applied some manual text processing and resolved the artists and song titles against the Freebase \cite{bollacker2008freebase} and Echo Nest\footnote{\texttt{http://developer.echonest.com/docs/v4}} databases.
-This resulted in a collection of 17,243 MIDI files for 10,060 unique songs, which we will refer to as the ``clean MIDI subset''..
+This resulted in a collection of 17,243 MIDI files for 10,060 unique songs, which we will refer to as the ``clean MIDI subset''.
 
 We will leverage the clean MIDI subset in two ways: First, to obtain ground-truth pairings of MSD/MIDI matches, and second, to create training data for our hashing scheme.  
 The training data does not need to be restricted to the MSD, and using other sources to increase the training set size will likely improve our hashing performance, so we combined the MSD with three benchmark audio collections: CAL500 \cite{turnbull2007towards}, CAL10k \cite{tingle2010exploring}, and uspop2002 \cite{berenzweig2004large}.
@@ -231,7 +231,7 @@ A straightforward objective function which can be minimized to find an appropria
 where $f$ and $g$ are the nonlinear mappings for each modality, $\alpha$ is a parameter to emphasize separating dissimilar items, and $m$ is a target separation of dissimilar pairs.
 
 The task is them to optimize the nonlinear mappings $f$ and $g$ with respect to $\mathcal{L}$. 
-In \cite{masci2014multimodal} the mappings are implemented as multi-layer nonlinear networks.
+In \cite{masci2014multimodal} the mappings are implemented as multilayer nonlinear networks.
 In the present work, we will use convolutional networks due to their ability to exploit invariances in the input feature representation; CQTs contain invariances in both the time and frequency axes, so convolutional networks are particularly well-suited for our task.
 Our two feature modalities are CQTs from synthesized MIDI files and audio files.
 We assemble the set of ``similar'' cross-modality pairs $\mathcal{P}$ by taking the CQT frames from individual aligned beats in our training set.

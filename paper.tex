@@ -140,7 +140,7 @@ First, we synthesize the MIDI data using \texttt{fluidsynth}.\footnote{\texttt{h
 We then estimate the MIDI beat locations using the MIDI file's tempo change information and the method described in \cite{raffel2014pretty_midi}.
 To circumvent the common issue where the beat is tracked one-half beat out of phase, we double the BPM until it is at least 240.
 We compute\footnote{All audio analysis was accomplished with \texttt{librosa} \cite{mcfee2014librosa}.} beat locations for the audio signal with the constraint that the BPM should remain close to the global MIDI tempo.
-We then compute log-amplitude beat-synchronous constant-Q transforms (CQTs) of audio and synthesized MIDI data with semitone frequency spacing and a frequency range from C3 (65.4 Hz) to C7 (1046.5 Hz).
+We then compute log-amplitude beat-synchronous constant-Q transforms (CQTs) of audio and synthesized MIDI data with semitone frequency spacing and a frequency range from C2 (65.4 Hz) to C6 (1046.5 Hz).
 The resulting feature matrices are then of dimensionality $N \times D$ and $M \times D$ where $N$ and $M$ are the resulting number of beats in the MIDI and audio recordings respectively and $D$ is $48$ (the number of semitones between C3 and C7).
 Example CQTs computed from a 7digital preview clip and from a synthesized MIDI file can be seen in Figure \ref{fig:simdtw}(a) and \ref{fig:simdtw}(b) respectively.
 
@@ -157,7 +157,7 @@ Example CQTs computed from a 7digital preview clip and from a synthesized MIDI f
 \end{figure*}
 
 We then use DTW to find the lowest-cost path through a full pairwise cosine distance matrix $S \in \mathbb{R}^{N \times M}$ of the MIDI and audio CQTs.
-This path can be represented as two sequences $p, q \in \mathbb{R}^L$ of indices from each sequence such that $p[i] = n, q[i] = m$ implies that the $n$th MIDI beat should be aligned to the $m$th audio beat.
+This path can be represented as two sequences $p, q \in \mathbb{N}^L$ of indices from each sequence such that $p[i] = n, q[i] = m$ implies that the $n$th MIDI beat should be aligned to the $m$th audio beat.
 Traditional DTW constrains this path to include the start and end of each sequence, i.e. $p[1] = q[1] = 1$ and $p[L] = N; q[L] = M$.
 However, the MSD audio consists of cropped preview clips from 7digital, while MIDI files are generally transcriptions of the entire song.
 We therefore modify this constraint so that either $gN \le p[L] \le N$ or $gM \le q[L] \le M$; $g$ is a parameter which provides a small amount of additional tolerance and is normally close to $1$.
@@ -226,7 +226,7 @@ Given feature vectors $\{x\}$ and $\{y\}$ from two modalities, and a set of pair
 A straightforward objective function which can be minimized to find an appropriate mapping is
 \begin{align*}
 \mathcal{L} &= \frac{1}{|\mathcal{P}|} \sum_{(x, y) \in \mathcal{P}} \| f(x) - g(y) \|_2^2\\
-& - \frac{\alpha}{|\mathcal{N}|} \sum_{(x, y) \in \mathcal{N}} \max(0, m - \|f(x) - g(y) \|_2)^2
+& + \frac{\alpha}{|\mathcal{N}|} \sum_{(x, y) \in \mathcal{N}} \max(0, m - \|f(x) - g(y) \|_2)^2
 \end{align*}
 where $f$ and $g$ are the nonlinear mappings for each modality, $\alpha$ is a parameter to control the importance of separating dissimilar items, and $m$ is a target separation of dissimilar pairs.
 
@@ -267,7 +267,7 @@ Our model was implemented using \texttt{theano} \cite{bastien2012theano} and \te
 To ensure good performance, we optimized all model hyperparameters using Whetlab,\footnote{Between submission and acceptance of this paper, Whetlab announced it would be ending its service.  For posterity, the results of our hyperparameter search are available at \texttt{http://bit.ly/hash-param-search}.} a web API which implements black-box Bayesian optimization \cite{snoek2012practical}.
 We used Whetlab to optimize the number of convolutional/pooling layers, the number and size of the fully-connected layers, the RMSProp learning rate and decay parameters, and the $\alpha$ and $m$ regularization parameters of $\mathcal{L}$.
 As a hyperparameter optimization objective, we used the Bhattacharyya distance as described above.
-The best performing network found by Whetlab had 2 convolutional layers, 2 ``hidden'' fully-connected layers with 2048 units in addition to a fully-connected output layer, a learning rate of .001 with an RMSProp decay parameter of .65, $\alpha = .5$, and $m = 4$.
+The best performing network found by Whetlab had 2 convolutional layers, 2 ``hidden'' fully-connected layers with 2048 units in addition to a fully-connected output layer, a learning rate of .001 with an RMSProp decay parameter of .65, $\alpha = 8$, and $m = 4$.
 This hyperparameter configuration yielded the output hash distance distributions for $\mathcal{P}$ and $\mathcal{N}$ shown in Figure \ref{fig:distances}, for a Bhattacharyya separation of $0.488$.
 
 \begin{figure}
